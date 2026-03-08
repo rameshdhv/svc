@@ -267,6 +267,27 @@ h1 {
   font-size: 0.92rem;
 }
 
+.services-dots {
+  display: none;
+}
+
+.services-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  background: #d7e3dd;
+  cursor: pointer;
+}
+
+.services-dot.active {
+  background: var(--brand);
+}
+
+*:not(input):not(textarea):not(select):not([contenteditable="true"]) {
+  caret-color: transparent;
+}
+
 .gallery-grid {
   margin-top: 1.1rem;
   display: grid;
@@ -457,6 +478,26 @@ h1 {
   color: #204034;
   font-weight: 700;
   text-decoration: none;
+}
+
+.mobile-book-switch {
+  display: none;
+}
+
+.mobile-switch-btn {
+  border: 1px solid var(--line);
+  background: #f3f8f5;
+  color: #1e3b2f;
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+}
+
+.mobile-switch-btn.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
 }
 
 .booking-grid {
@@ -853,6 +894,35 @@ footer {
     height: 180px;
   }
 
+  .section {
+    padding: 0.9rem 0;
+  }
+
+  .services.services-detailed {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .mobile-book-switch {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.2rem 0 0.8rem;
+  }
+
+  .mobile-switch-btn {
+    flex: 1 1 0;
+    text-align: center;
+  }
+
+  #book[data-mobile-book-view="form"] .booking-side {
+    display: none;
+  }
+
+  #book[data-mobile-book-view="info"] #appointmentForm {
+    display: none;
+  }
+
   .inline-actions .btn {
     width: 100%;
   }
@@ -866,7 +936,12 @@ footer {
   }
 
   .slot-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .slot {
+    font-size: 0.74rem;
+    padding: 0.45rem 0.25rem;
   }
 
   .btn,
@@ -890,6 +965,22 @@ footer {
 
   .timeline-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-shell .timeline-row {
+    padding: 0.35rem;
+    border-radius: 10px;
+  }
+
+  .admin-shell .timeline-slot {
+    min-height: 70px;
+    padding: 0.32rem;
+  }
+
+  .admin-shell .tiny-btn {
+    flex: 1 1 auto;
+    font-size: 0.68rem;
+    padding: 0.24rem 0.35rem;
   }
 
   .inline-actions input,

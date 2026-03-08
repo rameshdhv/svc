@@ -8,21 +8,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./assets/css/styles.css?v=12" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=16" />
 </head>
 <body>
   <header>
     <div class="container nav">
       <div class="logo" id="clinicName">Sarvam Dental Clinic</div>
       <nav class="nav-links" aria-label="Primary">
-        <a class="nav-link active" href="#home">Home</a>
-        <a class="nav-link" href="#services">Services</a>
+        <a class="nav-link active" href="#home" data-mobile-section="home">Home</a>
+        <a class="nav-link" href="#services" data-mobile-section="services">Services</a>
         <a class="nav-link" href="./gallery.html">Gallery</a>
-        <a class="nav-link" href="#book">Book</a>
+        <a class="nav-link" href="#book" data-mobile-section="book">Book</a>
       </nav>
-      <div class="nav-actions">
-        <a class="cta-call dial" href="tel:+918328010083">Call: <span id="clinicPhone">8328010083</span></a>
-      </div>
     </div>
   </header>
 
@@ -33,7 +30,7 @@
         <h1>Healthy smiles, precise care, and easy online booking.</h1>
         <p class="lead">Book a slot in seconds. Available slots are shown in green. Approved slots are shown in grey.</p>
         <div class="hero-actions">
-          <a class="btn" href="#book">Book Appointment</a>
+          <a class="btn" href="#book" data-mobile-section="book">Book Appointment</a>
           <a class="btn secondary dial" href="tel:+918328010083">Talk to Clinic</a>
         </div>
       </article>
@@ -96,8 +93,13 @@
       <h2>Book Appointment</h2>
       <p class="lead">Submit your request. Status starts as Pending, and clinic staff will approve/review in dashboard.</p>
 
+      <div class="mobile-book-switch" aria-label="Mobile booking view switch">
+        <button type="button" class="mobile-switch-btn active" data-mobile-book-view="form">Appointment Form</button>
+        <button type="button" class="mobile-switch-btn" data-mobile-book-view="info">Clinic Info</button>
+      </div>
+
       <div class="booking-grid">
-        <div class="booking-side">
+        <div class="booking-side" id="bookInfoPanel">
           <div class="details">
             <h3 style="font-size:1.5rem;">Need help?</h3>
             <p>For urgent dental pain, call clinic directly.</p>
@@ -189,14 +191,14 @@
   <footer>
     <div class="container">
       <div class="footer-links">
-        <a href="#about-us">About Us</a>
+        <a href="#about-us" id="aboutLink">About Us</a>
         <a href="#locate-us" id="locateLink">Locate Us</a>
       </div>
       <div>&copy; <span id="year"></span> Sarvam Dental Clinic</div>
     </div>
   </footer>
 
-  <script type="module" src="./assets/js/main.js?v=6"></script>
+  <script type="module" src="./assets/js/main.js?v=11"></script>
 </body>
 </html>
 

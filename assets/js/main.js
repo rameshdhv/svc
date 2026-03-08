@@ -24,6 +24,12 @@ const yearEl = document.getElementById("year");
 const showMapBtn = document.getElementById("showMapBtn");
 const mapWrap = document.getElementById("mapWrap");
 const locateLink = document.getElementById("locateLink");
+const aboutLink = document.getElementById("aboutLink");
+const bookSection = document.getElementById("book");
+const mobileBookSwitchBtns = document.querySelectorAll("[data-mobile-book-view]");
+const mobileSectionLinks = document.querySelectorAll("[data-mobile-section]");
+const homeSection = document.getElementById("home");
+const servicesSection = document.getElementById("services");
 
 const sessionId = crypto.randomUUID();
 let clinicSettings = null;
@@ -258,6 +264,85 @@ function initDate() {
   dateInput.value = today;
 }
 
+function setupMobileBookSwitcher() {
+  if (!bookSection || mobileBookSwitchBtns.length === 0) {
+    return;
+  }
+
+  function setView(view) {
+    bookSection.dataset.mobileBookView = view;
+    mobileBookSwitchBtns.forEach((btn) => {
+      const isActive = btn.dataset.mobileBookView === view;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+  }
+
+  mobileBookSwitchBtns.forEach((btn) => {
+    btn.addEventListener("click", () => setView(btn.dataset.mobileBookView || "form"));
+  });
+
+  setView("form");
+}
+
+function setupMobileSectionNav() {
+  if (!homeSection || !servicesSection || !bookSection || mobileSectionLinks.length === 0) {
+    return;
+  }
+  const mobileQuery = window.matchMedia("(max-width: 620px)");
+  const sections = {
+    home: homeSection,
+    services: servicesSection,
+    book: bookSection
+  };
+
+  function setActiveNav(target) {
+    mobileSectionLinks.forEach((link) => {
+      const active = link.dataset.mobileSection === target;
+      link.classList.toggle("active", active);
+      link.setAttribute("aria-current", active ? "page" : "false");
+    });
+  }
+
+  function showSection(target) {
+    Object.entries(sections).forEach(([key, section]) => {
+      section.hidden = mobileQuery.matches ? key !== target : false;
+    });
+    setActiveNav(target);
+    if (mobileQuery.matches) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  mobileSectionLinks.forEach((link) => {
+    link.addEventListener("click", (event) => {
+      if (!mobileQuery.matches) {
+        return;
+      }
+      const target = link.dataset.mobileSection;
+      if (!target || !sections[target]) {
+        return;
+      }
+      event.preventDefault();
+      showSection(target);
+    });
+  });
+
+  mobileQuery.addEventListener("change", () => {
+    if (!mobileQuery.matches) {
+      Object.values(sections).forEach((section) => {
+        section.hidden = false;
+      });
+      return;
+    }
+    showSection("home");
+  });
+
+  if (mobileQuery.matches) {
+    showSection("home");
+  }
+}
+
 async function wire() {
   loadServices();
   initDate();
@@ -268,8 +353,14 @@ async function wire() {
   dateInput.addEventListener("change", renderSlots);
   form.addEventListener("submit", handleSubmit);
 
-  document.getElementById("clinicName").textContent = CLINIC_NAME;
-  document.getElementById("clinicPhone").textContent = CLINIC_PHONE.replace("+91", "");
+  const clinicNameNode = document.getElementById("clinicName");
+  const clinicPhoneNode = document.getElementById("clinicPhone");
+  if (clinicNameNode) {
+    clinicNameNode.textContent = CLINIC_NAME;
+  }
+  if (clinicPhoneNode) {
+    clinicPhoneNode.textContent = CLINIC_PHONE.replace("+91", "");
+  }
   document.querySelectorAll(".dial").forEach((a) => {
     a.href = `tel:${CLINIC_PHONE}`;
   });
@@ -288,11 +379,56 @@ async function wire() {
   }
 
   if (locateLink && mapWrap && showMapBtn) {
-    locateLink.addEventListener("click", () => {
+    locateLink.addEventListener("click", (event) => {
+      const mobileQuery = window.matchMedia("(max-width: 620px)");
+      if (mobileQuery.matches) {
+        event.preventDefault();
+        bookSection.dataset.mobileBookView = "info";
+        mobileBookSwitchBtns.forEach((btn) => {
+          const isActive = btn.dataset.mobileBookView === "info";
+          btn.classList.toggle("active", isActive);
+        });
+        mobileSectionLinks.forEach((link) => {
+          link.classList.toggle("active", link.dataset.mobileSection === "book");
+        });
+        if (bookSection.hidden) {
+          homeSection.hidden = true;
+          servicesSection.hidden = true;
+          bookSection.hidden = false;
+        }
+      }
       mapWrap.removeAttribute("hidden");
       showMapBtn.textContent = "Hide Map";
+      document.getElementById("locate-us")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
+
+  if (aboutLink) {
+    aboutLink.addEventListener("click", (event) => {
+      const mobileQuery = window.matchMedia("(max-width: 620px)");
+      if (!mobileQuery.matches) {
+        return;
+      }
+      event.preventDefault();
+      bookSection.dataset.mobileBookView = "info";
+      mobileBookSwitchBtns.forEach((btn) => {
+        const isActive = btn.dataset.mobileBookView === "info";
+        btn.classList.toggle("active", isActive);
+      });
+      mobileSectionLinks.forEach((link) => {
+        link.classList.toggle("active", link.dataset.mobileSection === "book");
+      });
+      if (bookSection.hidden) {
+        homeSection.hidden = true;
+        servicesSection.hidden = true;
+        bookSection.hidden = false;
+      }
+      document.getElementById("about-us")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  setupMobileBookSwitcher();
+  setupMobileSectionNav();
 }
 
 wire();

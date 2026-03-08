@@ -1,0 +1,114 @@
+SARVAM DENTAL CLINIC - POST LAUNCH MAINTENANCE + BACKUP GUIDE
+==============================================================
+
+1) CORE ASSETS TO BACK UP
+-------------------------
+- GitHub repository (source of truth):
+  https://github.com/rameshdhv/svc
+- Supabase project details:
+  - Project URL
+  - Anon key
+  - Service role/secret key (server-side only)
+- Netlify site:
+  - Site ID, site name, production URL
+  - Environment variables
+- Twilio config (if enabled in future):
+  - Account SID
+  - Auth token
+  - WhatsApp sender/from number
+
+Recommended: keep these in a private password manager + private ops doc.
+
+
+2) MINIMUM DOCUMENTS TO KEEP IN REPO
+------------------------------------
+- README.md (quick setup)
+- HANDSOFF.md (project context and architecture)
+- supabase/schema.sql (DB schema + RLS)
+- netlify.toml (deploy/runtime config)
+- .env.example (required env variables list)
+
+
+3) BEFORE MAKING ANY CHANGE REQUEST
+-----------------------------------
+1. Pull latest code:
+   git pull
+2. Run local:
+   npm install
+   npx netlify dev --port 8888 --staticServerPort 4001
+3. Verify main pages:
+   - /index.html
+   - /gallery.html
+   - /doctors-login.html
+4. Create a branch for change:
+   git checkout -b feature/<short-change-name>
+
+
+4) DEPLOY WORKFLOW (SAFE)
+-------------------------
+1. Implement + test locally.
+2. Commit and push to GitHub.
+3. Netlify auto deploys from main (or deploy preview branch first).
+4. Smoke test production:
+   - booking form submit
+   - admin login
+   - approve/reject/unblock
+   - mobile layout check
+
+
+5) WHAT TO BACK UP REGULARLY
+----------------------------
+Weekly:
+- GitHub repo (already versioned)
+- Supabase schema export (SQL)
+- Netlify env vars snapshot (keys list + values in secure vault)
+
+Monthly:
+- Supabase data export (appointments, status history, blocked dates/slots, visitor events)
+
+
+6) IF DENTIST ASKS FOR CHANGES
+------------------------------
+Use this checklist:
+- Is this UI only, workflow, DB schema, or auth/security change?
+- Will it affect existing appointments/status logic?
+- Does it affect mobile only or all devices?
+- Any new external dependency (WhatsApp API, payment, maps, etc.)?
+
+Then estimate and implement in this order:
+1. UI changes (safe)
+2. Logic changes
+3. Schema changes (with migration)
+4. Production deploy + verification
+
+
+7) INCIDENT RECOVERY PLAN
+-------------------------
+If site breaks after deployment:
+1. Roll back to previous Netlify deploy.
+2. Revert latest Git commit on main.
+3. Restore last known good env vars.
+4. Re-test booking + admin flows.
+
+
+8) SECURITY PRACTICES
+---------------------
+- Never commit secret keys in frontend code.
+- Keep service role/secret key only in Netlify env.
+- Rotate keys if shared accidentally.
+- Use strong admin passwords and minimal admin accounts.
+
+
+9) QUICK COMMANDS
+-----------------
+Local run:
+  npx netlify dev --port 8888 --staticServerPort 4001
+
+Git push:
+  git add .
+  git commit -m "change: <message>"
+  git push
+
+Production URL:
+  https://sarvamdentalclinic.netlify.app/
+
