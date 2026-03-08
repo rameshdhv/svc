@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./assets/css/styles.css?v=16" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=19" />
 </head>
 <body>
   <header>
@@ -75,7 +75,7 @@
           <h2 style="font-size:1.8rem;">Appointments Dashboard</h2>
           <div class="inline-actions">
             <button id="refreshDashboardBtn" class="btn secondary" type="button">Refresh</button>
-            <button id="openSettingsBtn" class="icon-btn" type="button" aria-label="Open settings" title="Settings">⚙</button>
+            <button id="openSettingsBtn" class="btn secondary" type="button" aria-label="Open settings" title="Settings">Settings ⚙</button>
             <button id="logout" class="btn secondary" type="button">Logout</button>
           </div>
         </div>
@@ -175,13 +175,13 @@
         <form id="slotBlockForm">
           <div class="toolbar">
             <input id="slotBlockDate" type="date" required />
-            <select id="slotBlockLabel" required>
-              <option value="">Select session slot</option>
-            </select>
+            <button id="slotPickerOpenBtn" type="button" class="btn secondary">Select Sessions</button>
+            <p id="slotPickerSummary" class="lead">No session selected</p>
+            <select id="slotBlockLabel" multiple size="6" aria-label="Select one or more session slots" hidden></select>
             <input id="slotBlockReason" type="text" placeholder="Reason (optional)" />
-            <div></div>
             <button type="submit" class="btn">Block Session</button>
           </div>
+          <p class="lead" style="margin-top:8px;">Use Select Sessions to choose one or more time slots, then block in one go.</p>
         </form>
         <div style="margin-top: 10px; overflow-x:auto;">
           <table>
@@ -244,7 +244,7 @@
   <div id="settingsModal" class="modal-backdrop" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
       <h3 id="settingsTitle">Clinic Settings</h3>
-      <p class="lead" style="margin-top:6px;">Set slot duration. Change applies from selected date only when there are no active appointments for that date.</p>
+      <p class="lead" style="margin-top:6px;">Set slot rules and booking visibility. Slot duration change applies from selected date only when there are no active appointments for that date.</p>
       <form id="settingsForm">
         <div class="field">
           <label for="slotDurationSelect">Slot Duration</label>
@@ -257,15 +257,61 @@
           <label for="slotEffectiveDate">Effective From Date</label>
           <input id="slotEffectiveDate" type="date" required />
         </div>
+        <div class="field">
+          <label for="bookingWindowDays">Show Slots For Next (Days)</label>
+          <input id="bookingWindowDays" type="number" min="1" max="90" required />
+        </div>
+        <div class="field">
+          <label>Permanent Weekly Off</label>
+          <div class="weekday-grid">
+            <label><input type="checkbox" class="weekly-off" value="Sunday" /> Sunday</label>
+            <label><input type="checkbox" class="weekly-off" value="Monday" /> Monday</label>
+            <label><input type="checkbox" class="weekly-off" value="Tuesday" /> Tuesday</label>
+            <label><input type="checkbox" class="weekly-off" value="Wednesday" /> Wednesday</label>
+            <label><input type="checkbox" class="weekly-off" value="Thursday" /> Thursday</label>
+            <label><input type="checkbox" class="weekly-off" value="Friday" /> Friday</label>
+            <label><input type="checkbox" class="weekly-off" value="Saturday" /> Saturday</label>
+          </div>
+        </div>
         <div class="modal-actions">
           <button id="settingsCancelBtn" type="button" class="btn secondary">Cancel</button>
           <button type="submit" class="btn">Save Settings</button>
         </div>
       </form>
+
+      <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
+      <h3 style="font-size:1.2rem;">Reset Past Data</h3>
+      <p class="lead" style="margin-top:6px;">Delete older records for selected month. This action is permanent.</p>
+      <div class="field">
+        <label for="purgeMonth">Delete Data Before Month</label>
+        <input id="purgeMonth" type="month" />
+      </div>
+      <div class="field">
+        <label for="purgePassword">Confirm Admin Password</label>
+        <input id="purgePassword" type="password" placeholder="Enter your current password" />
+      </div>
+      <div class="modal-actions">
+        <button id="purgeDataBtn" type="button" class="btn secondary">Reset Past Data</button>
+      </div>
     </div>
   </div>
 
-  <script type="module" src="./assets/js/admin.js?v=17"></script>
+  <div id="slotPickerModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="slotPickerTitle">
+      <h3 id="slotPickerTitle">Select Sessions to Block</h3>
+      <p class="lead" style="margin-top:6px;">Pick one or more sessions.</p>
+      <div id="slotPickerList" class="slot-picker-grid"></div>
+      <div class="modal-actions">
+        <button id="slotSelectAllBtn" type="button" class="btn secondary">Select All</button>
+        <button id="slotClearBtn" type="button" class="btn secondary">Clear</button>
+        <button id="slotPickerCancelBtn" type="button" class="btn secondary">Cancel</button>
+        <button id="slotPickerApplyBtn" type="button" class="btn">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastRoot" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="./assets/js/admin.js?v=24"></script>
 </body>
 </html>
 

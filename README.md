@@ -17,6 +17,10 @@
 - Emergency session blocking with unblock controls
 - Manual booking by staff with instant WhatsApp confirmation draft
 - Self-serve forgot password flow for doctor/staff login
+- Booking window control (next N days) from admin settings
+- Permanent weekly-off rules (for example Sunday off) from admin settings
+- Auto-hide expired same-day slots for customers
+- Admin-only secure past-data reset by month with password confirmation
 
 ## 1) Run SQL in Supabase
 - Open Supabase SQL editor and run:
@@ -79,6 +83,7 @@ Set these in Netlify Site Settings -> Environment Variables:
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_WHATSAPP_FROM`
+- `SUPABASE_ANON_KEY` (also required by reset-past-data function for password verification)
 
 For Twilio sandbox, `TWILIO_WHATSAPP_FROM` is usually `whatsapp:+14155238886`.
 For production, use your approved WhatsApp sender.

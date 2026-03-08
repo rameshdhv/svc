@@ -67,14 +67,28 @@ create table if not exists public.blocked_slots (
 create table if not exists public.clinic_settings (
   id int primary key default 1,
   slot_duration_minutes int not null default 30 check (slot_duration_minutes in (30, 60)),
+  booking_window_days int not null default 10 check (booking_window_days between 1 and 90),
+  weekly_off_days text[] not null default '{}',
   effective_from_date date not null default current_date,
   updated_by uuid references auth.users (id),
   updated_at timestamptz not null default now(),
   constraint single_settings_row check (id = 1)
 );
 
-insert into public.clinic_settings (id, slot_duration_minutes, effective_from_date)
-values (1, 30, current_date)
+alter table public.clinic_settings
+add column if not exists booking_window_days int not null default 10;
+
+alter table public.clinic_settings
+add column if not exists weekly_off_days text[] not null default '{}';
+
+alter table public.clinic_settings
+drop constraint if exists clinic_settings_booking_window_days_check;
+
+alter table public.clinic_settings
+add constraint clinic_settings_booking_window_days_check check (booking_window_days between 1 and 90);
+
+insert into public.clinic_settings (id, slot_duration_minutes, booking_window_days, weekly_off_days, effective_from_date)
+values (1, 30, 10, '{}', current_date)
 on conflict (id) do nothing;
 
 create or replace function public.set_updated_at()

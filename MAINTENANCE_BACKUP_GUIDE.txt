@@ -51,8 +51,13 @@ Recommended: keep these in a private password manager + private ops doc.
 3. Netlify auto deploys from main (or deploy preview branch first).
 4. Smoke test production:
    - booking form submit
+   - booking window limit and weekly off behavior
+   - today past slot hiding behavior
    - admin login
+   - emergency session blocking via Select Sessions popup
    - approve/reject/unblock
+   - settings save (duration/visibility/weekly off)
+   - reset past data with password
    - mobile layout check
 
 
@@ -95,6 +100,7 @@ If site breaks after deployment:
 ---------------------
 - Never commit secret keys in frontend code.
 - Keep service role/secret key only in Netlify env.
+- Keep Supabase anon key in Netlify env as well (required for server-side password verification flow in reset function).
 - Rotate keys if shared accidentally.
 - Use strong admin passwords and minimal admin accounts.
 
@@ -111,4 +117,3 @@ Git push:
 
 Production URL:
   https://sarvamdentalclinic.netlify.app/
-

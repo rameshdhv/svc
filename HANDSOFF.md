@@ -29,6 +29,9 @@ Repository:
 - `assets/js/main.js`
   - public booking flow
   - slot rendering + blocked date/session checks
+  - hides expired same-day slots in Asia/Kolkata
+  - booking window days enforcement from clinic settings
+  - permanent weekly-off day handling from clinic settings
   - mobile section switching (Home/Services/Book)
   - mobile booking view switch (Appointment Form / Clinic Info)
   - footer about/locate mobile routing behavior
@@ -38,7 +41,12 @@ Repository:
   - appointment status transitions (approve/reject/unblock etc.)
   - timeline rendering and actions
   - blocking/unblocking dates and sessions
-  - clinic settings (slot duration + effective date)
+  - emergency session picker modal with bulk slot selection
+  - clinic settings:
+    - slot duration + effective date
+    - booking window days
+    - permanent weekly off days
+  - secure reset past data by month with admin password verification
   - manual booking
 
 ## 5. Database / Supabase
@@ -69,6 +77,10 @@ Auth model:
 4. Blocking controls:
    - Holiday/date range blocking
    - Emergency session slot blocking
+5. Customer-side slot visibility rules:
+   - Past slots for today are hidden automatically
+   - Booking is limited to configurable next N days
+   - Weekly off days are closed
 
 ## 7. Mobile UX Decisions Implemented
 - Mobile-only section mode:
@@ -87,6 +99,10 @@ Used/expected:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (or Supabase Secret Key equivalent for server-side)
+
+Used by secure reset function:
+- `SUPABASE_ANON_KEY` (password re-verification)
+- `SUPABASE_SERVICE_ROLE_KEY` (admin data cleanup operations)
 
 Optional (if Twilio re-enabled):
 - `TWILIO_ACCOUNT_SID`
@@ -114,6 +130,9 @@ Pages:
 - Twilio currently disabled by user; site uses WhatsApp redirect flow from browser in admin actions.
 - Admin portal is not linked openly from public nav; accessed directly by URL:
   - `/doctors-login.html`
+- Dashboard header controls:
+  - `Refresh`
+  - `Settings`
 
 ## 12. Backup and Continuity
 Keep these safe:
@@ -128,4 +147,5 @@ If project moves to another IDE/system:
 2. Re-add env vars
 3. Run local Netlify dev
 4. Verify booking + admin flows
+
 

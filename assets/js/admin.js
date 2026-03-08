@@ -23,6 +23,7 @@ const newPassword = document.getElementById("newPassword");
 const confirmNewPassword = document.getElementById("confirmNewPassword");
 const loginStatus = document.getElementById("loginStatus");
 const appStatus = document.getElementById("appStatus");
+const toastRoot = document.getElementById("toastRoot");
 const dashboard = document.getElementById("dashboard");
 const refreshDashboardBtn = document.getElementById("refreshDashboardBtn");
 const tableBody = document.getElementById("appointmentsBody");
@@ -41,6 +42,14 @@ const slotBlockForm = document.getElementById("slotBlockForm");
 const slotBlockDate = document.getElementById("slotBlockDate");
 const slotBlockLabel = document.getElementById("slotBlockLabel");
 const slotBlockReason = document.getElementById("slotBlockReason");
+const slotPickerOpenBtn = document.getElementById("slotPickerOpenBtn");
+const slotPickerSummary = document.getElementById("slotPickerSummary");
+const slotPickerModal = document.getElementById("slotPickerModal");
+const slotPickerList = document.getElementById("slotPickerList");
+const slotPickerCancelBtn = document.getElementById("slotPickerCancelBtn");
+const slotPickerApplyBtn = document.getElementById("slotPickerApplyBtn");
+const slotSelectAllBtn = document.getElementById("slotSelectAllBtn");
+const slotClearBtn = document.getElementById("slotClearBtn");
 const blockedSlotsBody = document.getElementById("blockedSlotsBody");
 const manualBookingForm = document.getElementById("manualBookingForm");
 const manualName = document.getElementById("manualName");
@@ -73,17 +82,37 @@ const settingsModal = document.getElementById("settingsModal");
 const settingsForm = document.getElementById("settingsForm");
 const slotDurationSelect = document.getElementById("slotDurationSelect");
 const slotEffectiveDate = document.getElementById("slotEffectiveDate");
+const bookingWindowDays = document.getElementById("bookingWindowDays");
+const weeklyOffCheckboxes = document.querySelectorAll(".weekly-off");
 const settingsCancelBtn = document.getElementById("settingsCancelBtn");
+const purgeMonth = document.getElementById("purgeMonth");
+const purgePassword = document.getElementById("purgePassword");
+const purgeDataBtn = document.getElementById("purgeDataBtn");
 
 let pendingStatusAction = null;
 let forgotCooldownTimer = null;
 let clinicSettings = null;
+let slotPickerDraftSelection = new Set();
 const FORGOT_COOLDOWN_SECONDS = 90;
 const FORGOT_COOLDOWN_KEY = "sarvam_forgot_cooldown_until";
 
 function setStatus(el, text, type = "") {
   el.className = `status ${type}`;
   el.textContent = text;
+}
+
+function showToast(message, type = "success") {
+  if (!toastRoot || !message) {
+    return;
+  }
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  toast.setAttribute("role", "status");
+  toastRoot.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 3200);
 }
 
 function minutesToLabel(value) {
@@ -137,18 +166,38 @@ async function isAdmin() {
 }
 
 async function loadClinicSettings() {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("clinic_settings")
-    .select("slot_duration_minutes, effective_from_date")
+    .select("slot_duration_minutes, effective_from_date, booking_window_days, weekly_off_days")
     .eq("id", 1)
     .maybeSingle();
 
   if (error) {
+    const fallback = await supabase
+      .from("clinic_settings")
+      .select("slot_duration_minutes, effective_from_date")
+      .eq("id", 1)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) {
     setStatus(appStatus, `Unable to load settings: ${error.message}`, "error");
-    clinicSettings = null;
+    clinicSettings = {
+      slot_duration_minutes: 30,
+      effective_from_date: todayYmdInKolkata(),
+      booking_window_days: 10,
+      weekly_off_days: []
+    };
     return;
   }
-  clinicSettings = data || { slot_duration_minutes: 30, effective_from_date: todayYmdInKolkata() };
+  clinicSettings = {
+    slot_duration_minutes: data?.slot_duration_minutes || 30,
+    effective_from_date: data?.effective_from_date || todayYmdInKolkata(),
+    booking_window_days: data?.booking_window_days || 10,
+    weekly_off_days: Array.isArray(data?.weekly_off_days) ? data.weekly_off_days : []
+  };
 }
 
 function getSlotDurationForDate(dateYmd) {
@@ -162,16 +211,10 @@ function getSlotDurationForDate(dateYmd) {
 }
 
 function fillSlotSelect(selectElement, dateYmd) {
-  const firstOption = selectElement.querySelector("option[value='']");
-  selectElement.innerHTML = "";
-  if (firstOption) {
-    selectElement.appendChild(firstOption);
-  } else {
-    const empty = document.createElement("option");
-    empty.value = "";
-    empty.textContent = "Select session slot";
-    selectElement.appendChild(empty);
+  if (!selectElement) {
+    return;
   }
+  selectElement.innerHTML = "";
   const duration = dateYmd ? getSlotDurationForDate(dateYmd) : SLOT_DURATION_MINUTES;
   buildSlots(duration).forEach((slot) => {
     const option = document.createElement("option");
@@ -179,6 +222,76 @@ function fillSlotSelect(selectElement, dateYmd) {
     option.textContent = slot;
     selectElement.appendChild(option);
   });
+  if (selectElement === slotBlockLabel) {
+    updateSlotPickerSummary();
+  }
+}
+
+function getSelectedEmergencySlots() {
+  return Array.from(slotBlockLabel.selectedOptions).map((option) => option.value).filter(Boolean);
+}
+
+function updateSlotPickerSummary() {
+  if (!slotPickerSummary) {
+    return;
+  }
+  const selected = getSelectedEmergencySlots();
+  if (selected.length === 0) {
+    slotPickerSummary.textContent = "No session selected";
+    return;
+  }
+  if (selected.length <= 2) {
+    slotPickerSummary.textContent = selected.join(" | ");
+    return;
+  }
+  slotPickerSummary.textContent = `${selected.length} sessions selected`;
+}
+
+function renderSlotPickerDraft() {
+  if (!slotPickerList) {
+    return;
+  }
+  slotPickerList.innerHTML = "";
+  Array.from(slotBlockLabel.options).forEach((option) => {
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className = `slot-pill${slotPickerDraftSelection.has(option.value) ? " active" : ""}`;
+    pill.textContent = option.value;
+    pill.dataset.slot = option.value;
+    pill.setAttribute("aria-pressed", slotPickerDraftSelection.has(option.value) ? "true" : "false");
+    pill.addEventListener("click", () => {
+      if (slotPickerDraftSelection.has(option.value)) {
+        slotPickerDraftSelection.delete(option.value);
+      } else {
+        slotPickerDraftSelection.add(option.value);
+      }
+      renderSlotPickerDraft();
+    });
+    slotPickerList.appendChild(pill);
+  });
+}
+
+function openSlotPickerModal() {
+  if (!slotBlockDate.value) {
+    setStatus(appStatus, "Select block date first.", "warn");
+    showToast("Select block date first.", "warn");
+    return;
+  }
+  slotPickerDraftSelection = new Set(getSelectedEmergencySlots());
+  renderSlotPickerDraft();
+  slotPickerModal.hidden = false;
+}
+
+function closeSlotPickerModal() {
+  slotPickerModal.hidden = true;
+}
+
+function applySlotPickerDraft() {
+  Array.from(slotBlockLabel.options).forEach((option) => {
+    option.selected = slotPickerDraftSelection.has(option.value);
+  });
+  updateSlotPickerSummary();
+  closeSlotPickerModal();
 }
 
 async function handleLogin(event) {
@@ -355,9 +468,11 @@ async function loadBlockedDates() {
       const { error: delError } = await supabase.from("blocked_dates").delete().eq("id", row.id);
       if (delError) {
         setStatus(appStatus, `Unable to unblock dates: ${delError.message}`, "error");
+        showToast("Unable to unblock dates.", "error");
         return;
       }
       setStatus(appStatus, "Blocked dates removed.", "ok");
+      showToast("Blocked dates removed.", "success");
       await loadBlockedDates();
     });
     blockedDatesBody.appendChild(tr);
@@ -389,9 +504,11 @@ async function loadBlockedSlots() {
       const { error: delError } = await supabase.from("blocked_slots").delete().eq("id", row.id);
       if (delError) {
         setStatus(appStatus, `Unable to unblock session: ${delError.message}`, "error");
+        showToast("Unable to unblock session.", "error");
         return;
       }
       setStatus(appStatus, "Blocked session removed.", "ok");
+      showToast("Blocked session removed.", "success");
       await loadBlockedSlots();
     });
     blockedSlotsBody.appendChild(tr);
@@ -422,10 +539,21 @@ function openSettingsModal() {
   if (!clinicSettings) {
     slotDurationSelect.value = "30";
     slotEffectiveDate.value = todayYmdInKolkata();
+    bookingWindowDays.value = "10";
+    weeklyOffCheckboxes.forEach((box) => {
+      box.checked = false;
+    });
   } else {
     slotDurationSelect.value = String(clinicSettings.slot_duration_minutes);
     slotEffectiveDate.value = clinicSettings.effective_from_date;
+    bookingWindowDays.value = String(clinicSettings.booking_window_days || 10);
+    const weeklyOff = Array.isArray(clinicSettings.weekly_off_days) ? clinicSettings.weekly_off_days : [];
+    weeklyOffCheckboxes.forEach((box) => {
+      box.checked = weeklyOff.includes(box.value);
+    });
   }
+  purgeMonth.value = "";
+  purgePassword.value = "";
   settingsModal.hidden = false;
 }
 
@@ -457,8 +585,12 @@ async function saveClinicSettings(event) {
 
   const slotDuration = Number(slotDurationSelect.value);
   const effectiveDate = slotEffectiveDate.value;
-  if (!effectiveDate || ![30, 60].includes(slotDuration)) {
-    setStatus(appStatus, "Select valid slot duration and effective date.", "error");
+  const visibilityDays = Number(bookingWindowDays.value);
+  const weeklyOffDays = Array.from(weeklyOffCheckboxes)
+    .filter((box) => box.checked)
+    .map((box) => box.value);
+  if (!effectiveDate || ![30, 60].includes(slotDuration) || !Number.isInteger(visibilityDays) || visibilityDays < 1 || visibilityDays > 90) {
+    setStatus(appStatus, "Select valid slot duration, visibility days (1-90), and effective date.", "error");
     return;
   }
 
@@ -478,6 +610,8 @@ async function saveClinicSettings(event) {
     .upsert({
       id: 1,
       slot_duration_minutes: slotDuration,
+      booking_window_days: visibilityDays,
+      weekly_off_days: weeklyOffDays,
       effective_from_date: effectiveDate,
       updated_by: uid,
       updated_at: new Date().toISOString()
@@ -485,14 +619,75 @@ async function saveClinicSettings(event) {
 
   if (error) {
     setStatus(appStatus, `Unable to save settings: ${error.message}`, "error");
+    showToast("Unable to save settings.", "error");
     return;
   }
 
   await loadClinicSettings();
   fillSlotSelect(slotBlockLabel, slotBlockDate.value || todayYmdInKolkata());
   fillSlotSelect(manualSlot, manualDate.value || todayYmdInKolkata());
-  setStatus(appStatus, `Slot duration updated to ${slotDuration} minutes from ${effectiveDate}.`, "ok");
+  setStatus(appStatus, `Settings saved: ${slotDuration} min slots, ${visibilityDays} day visibility.`, "ok");
+  showToast("Settings saved successfully.", "success");
   closeSettingsModal();
+}
+
+async function getAccessToken() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    throw new Error(error.message);
+  }
+  const token = data?.session?.access_token;
+  if (!token) {
+    throw new Error("Session expired. Please login again.");
+  }
+  return token;
+}
+
+async function resetPastData() {
+  const monthValue = purgeMonth.value;
+  const passwordValue = purgePassword.value;
+
+  if (!monthValue) {
+    setStatus(appStatus, "Select cutoff month before reset.", "error");
+    return;
+  }
+  if (!passwordValue) {
+    setStatus(appStatus, "Enter admin password to confirm reset.", "error");
+    return;
+  }
+
+  const really = window.confirm(`This will permanently delete old data before ${monthValue}. Continue?`);
+  if (!really) {
+    return;
+  }
+
+  try {
+    const token = await getAccessToken();
+    const response = await fetch("/.netlify/functions/reset-past-data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        cutoffMonth: monthValue,
+        password: passwordValue
+      })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setStatus(appStatus, payload.error || "Unable to reset past data.", "error");
+      showToast(payload.error || "Unable to reset past data.", "error");
+      return;
+    }
+    purgePassword.value = "";
+    setStatus(appStatus, payload.message || "Past data reset completed.", "ok");
+    showToast(payload.message || "Past data reset completed.", "success");
+    await loadDashboard();
+  } catch (error) {
+    setStatus(appStatus, error.message || "Unable to reset past data.", "error");
+    showToast(error.message || "Unable to reset past data.", "error");
+  }
 }
 
 function normalizeWhatsappPhone(rawPhone) {
@@ -556,6 +751,7 @@ async function updateStatus(appointment, status, reasonOverride = "") {
   const { error } = await supabase.from("appointments").update(patch).eq("id", appointment.id);
   if (error) {
     setStatus(appStatus, `Status update failed: ${error.message}`, "error");
+    showToast("Status update failed.", "error");
     return;
   }
 
@@ -564,6 +760,7 @@ async function updateStatus(appointment, status, reasonOverride = "") {
   }
 
   setStatus(appStatus, isUnblock ? "Appointment unblocked with reason." : `Appointment marked as ${finalStatus}.`, "ok");
+  showToast(isUnblock ? "Appointment unblocked." : `Appointment ${finalStatus.toLowerCase()}.`, "success");
   await loadDashboard();
 }
 
@@ -969,6 +1166,8 @@ async function init() {
 
   slotBlockDate.addEventListener("change", () => {
     fillSlotSelect(slotBlockLabel, slotBlockDate.value || todayYmdInKolkata());
+    slotPickerDraftSelection = new Set();
+    updateSlotPickerSummary();
   });
   manualDate.addEventListener("change", () => {
     fillSlotSelect(manualSlot, manualDate.value || todayYmdInKolkata());
@@ -1038,8 +1237,28 @@ async function init() {
   });
   if (refreshDashboardBtn) {
     refreshDashboardBtn.addEventListener("click", async () => {
-      setStatus(appStatus, "Refreshing data from Supabase...", "ok");
+      setStatus(appStatus, "Refreshing data...", "ok");
       await loadDashboard();
+    });
+  }
+  if (purgeDataBtn) {
+    purgeDataBtn.addEventListener("click", resetPastData);
+  }
+
+  if (slotPickerOpenBtn) {
+    slotPickerOpenBtn.addEventListener("click", openSlotPickerModal);
+  }
+  if (slotPickerCancelBtn) {
+    slotPickerCancelBtn.addEventListener("click", closeSlotPickerModal);
+  }
+  if (slotPickerApplyBtn) {
+    slotPickerApplyBtn.addEventListener("click", applySlotPickerDraft);
+  }
+  if (slotPickerModal) {
+    slotPickerModal.addEventListener("click", (event) => {
+      if (event.target === slotPickerModal) {
+        closeSlotPickerModal();
+      }
     });
   }
 
@@ -1076,11 +1295,13 @@ async function init() {
     const { error } = await supabase.from("blocked_dates").insert(payload);
     if (error) {
       setStatus(appStatus, `Unable to block dates: ${error.message}`, "error");
+      showToast("Unable to block dates.", "error");
       return;
     }
 
     blockForm.reset();
     setStatus(appStatus, "Dates blocked successfully.", "ok");
+    showToast("Dates blocked successfully.", "success");
     await loadBlockedDates();
   });
 
@@ -1092,32 +1313,56 @@ async function init() {
       return;
     }
 
-    if (!slotBlockDate.value || !slotBlockLabel.value) {
-      setStatus(appStatus, "Select block date and session slot.", "error");
+    if (!slotBlockDate.value) {
+      setStatus(appStatus, "Select block date.", "error");
+      showToast("Select block date first.", "warn");
       return;
     }
 
-    const payload = {
+    const selectedSlots = getSelectedEmergencySlots();
+    if (selectedSlots.length === 0) {
+      setStatus(appStatus, "Select at least one session slot.", "error");
+      showToast("Select at least one session slot.", "warn");
+      return;
+    }
+
+    const rows = selectedSlots.map((slot) => ({
       block_date: slotBlockDate.value,
-      slot_label: slotBlockLabel.value,
+      slot_label: slot,
       reason: slotBlockReason.value.trim() || null,
       created_by: uid
-    };
+    }));
 
-    const { error } = await supabase.from("blocked_slots").insert(payload);
+    const { error } = await supabase
+      .from("blocked_slots")
+      .upsert(rows, { onConflict: "block_date,slot_label", ignoreDuplicates: true });
     if (error) {
-      if (error.message.includes("duplicate key value")) {
-        setStatus(appStatus, "Session already blocked for selected date.", "warn");
-        return;
-      }
       setStatus(appStatus, `Unable to block session: ${error.message}`, "error");
+      showToast("Unable to block session.", "error");
       return;
     }
 
     slotBlockForm.reset();
-    setStatus(appStatus, "Session blocked successfully.", "ok");
+    fillSlotSelect(slotBlockLabel, slotBlockDate.value || todayYmdInKolkata());
+    slotPickerDraftSelection = new Set();
+    updateSlotPickerSummary();
+    setStatus(appStatus, `${selectedSlots.length} session(s) blocked successfully.`, "ok");
+    showToast(`${selectedSlots.length} session(s) blocked successfully.`, "success");
     await loadBlockedSlots();
   });
+
+  if (slotSelectAllBtn) {
+    slotSelectAllBtn.addEventListener("click", () => {
+      slotPickerDraftSelection = new Set(Array.from(slotBlockLabel.options).map((option) => option.value));
+      renderSlotPickerDraft();
+    });
+  }
+  if (slotClearBtn) {
+    slotClearBtn.addEventListener("click", () => {
+      slotPickerDraftSelection = new Set();
+      renderSlotPickerDraft();
+    });
+  }
 
   manualBookingForm.addEventListener("submit", async (event) => {
     event.preventDefault();

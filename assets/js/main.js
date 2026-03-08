@@ -25,6 +25,7 @@ const showMapBtn = document.getElementById("showMapBtn");
 const mapWrap = document.getElementById("mapWrap");
 const locateLink = document.getElementById("locateLink");
 const aboutLink = document.getElementById("aboutLink");
+const toastRoot = document.getElementById("toastRoot");
 const bookSection = document.getElementById("book");
 const mobileBookSwitchBtns = document.querySelectorAll("[data-mobile-book-view]");
 const mobileSectionLinks = document.querySelectorAll("[data-mobile-section]");
@@ -60,6 +61,20 @@ function setStatus(type, message) {
   statusEl.textContent = message;
 }
 
+function showToast(message, type = "success") {
+  if (!toastRoot || !message) {
+    return;
+  }
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  toast.setAttribute("role", "status");
+  toastRoot.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 3200);
+}
+
 function normalizeDateToYMD(date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     year: "numeric",
@@ -71,6 +86,43 @@ function normalizeDateToYMD(date) {
   const m = parts.find((x) => x.type === "month")?.value;
   const d = parts.find((x) => x.type === "day")?.value;
   return `${y}-${m}-${d}`;
+}
+
+function todayYmdInKolkata() {
+  return normalizeDateToYMD(new Date());
+}
+
+function nowMinutesInKolkata() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Kolkata"
+  }).formatToParts(new Date());
+  const hh = Number(parts.find((x) => x.type === "hour")?.value || "0");
+  const mm = Number(parts.find((x) => x.type === "minute")?.value || "0");
+  return hh * 60 + mm;
+}
+
+function slotStartMinutes(slotLabel) {
+  const match = String(slotLabel || "").match(/^(\d{1,2}):(\d{2})\s(AM|PM)/);
+  if (!match) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+  let hours = Number(match[1]) % 12;
+  const minutes = Number(match[2]);
+  if (match[3] === "PM") {
+    hours += 12;
+  }
+  return hours * 60 + minutes;
+}
+
+function weekdayNameFromYmd(dateYmd) {
+  const date = new Date(`${dateYmd}T00:00:00+05:30`);
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    timeZone: "Asia/Kolkata"
+  }).format(date);
 }
 
 async function trackEvent(name, value) {
@@ -121,18 +173,46 @@ async function getBlockedSlots(dateYmd) {
 }
 
 async function loadClinicSettings() {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("clinic_settings")
-    .select("slot_duration_minutes, effective_from_date")
+    .select("slot_duration_minutes, effective_from_date, booking_window_days, weekly_off_days")
     .eq("id", 1)
     .maybeSingle();
 
   if (error) {
+    const fallback = await supabase
+      .from("clinic_settings")
+      .select("slot_duration_minutes, effective_from_date")
+      .eq("id", 1)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) {
     console.error(error);
-    clinicSettings = null;
+    clinicSettings = {
+      slot_duration_minutes: SLOT_DURATION_MINUTES,
+      effective_from_date: todayYmdInKolkata(),
+      booking_window_days: 10,
+      weekly_off_days: []
+    };
     return;
   }
-  clinicSettings = data || null;
+  clinicSettings = {
+    slot_duration_minutes: data?.slot_duration_minutes || SLOT_DURATION_MINUTES,
+    effective_from_date: data?.effective_from_date || todayYmdInKolkata(),
+    booking_window_days: data?.booking_window_days || 10,
+    weekly_off_days: Array.isArray(data?.weekly_off_days) ? data.weekly_off_days : []
+  };
+  if (!data) {
+    clinicSettings = {
+      slot_duration_minutes: SLOT_DURATION_MINUTES,
+      effective_from_date: todayYmdInKolkata(),
+      booking_window_days: 10,
+      weekly_off_days: []
+    };
+  }
 }
 
 function getSlotDurationForDate(dateYmd) {
@@ -143,6 +223,28 @@ function getSlotDurationForDate(dateYmd) {
     return clinicSettings.slot_duration_minutes;
   }
   return SLOT_DURATION_MINUTES;
+}
+
+function getBookingWindowDays() {
+  const value = Number(clinicSettings?.booking_window_days || 10);
+  if (!Number.isFinite(value)) {
+    return 10;
+  }
+  return Math.min(90, Math.max(1, value));
+}
+
+function getWeeklyOffDays() {
+  const values = clinicSettings?.weekly_off_days;
+  return Array.isArray(values) ? values : [];
+}
+
+function isWeeklyOffDate(dateYmd) {
+  const weeklyOffDays = getWeeklyOffDays();
+  if (!weeklyOffDays.length) {
+    return false;
+  }
+  const weekday = weekdayNameFromYmd(dateYmd);
+  return weeklyOffDays.includes(weekday);
 }
 
 async function renderSlots() {
@@ -156,6 +258,20 @@ async function renderSlots() {
   blockedNotice.textContent = "";
 
   if (!selectedDate) {
+    return;
+  }
+
+  if (isWeeklyOffDate(selectedDate)) {
+    allSlots.forEach((slot) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "slot approved";
+      button.textContent = slot;
+      button.disabled = true;
+      slotsEl.appendChild(button);
+    });
+    blockedNotice.textContent = "Clinic is closed on this day (weekly off).";
+    blockedNotice.style.display = "block";
     return;
   }
 
@@ -178,7 +294,15 @@ async function renderSlots() {
   const approved = await getApprovedSlots(selectedDate);
   const blockedSlots = await getBlockedSlots(selectedDate);
 
+  const isToday = selectedDate === todayYmdInKolkata();
+  const nowMinutes = nowMinutesInKolkata();
+  let hiddenExpiredCount = 0;
+
   allSlots.forEach((slot) => {
+    if (isToday && slotStartMinutes(slot) <= nowMinutes) {
+      hiddenExpiredCount += 1;
+      return;
+    }
     const isApproved = approved.has(slot) || blockedSlots.has(slot);
     const button = document.createElement("button");
     button.type = "button";
@@ -200,6 +324,9 @@ async function renderSlots() {
 
   if (blockedSlots.size > 0) {
     blockedNotice.textContent = "Some sessions are blocked by clinic for this date.";
+    blockedNotice.style.display = "block";
+  } else if (slotsEl.children.length === 0) {
+    blockedNotice.textContent = "No more slots available for today.";
     blockedNotice.style.display = "block";
   }
 }
@@ -244,15 +371,18 @@ async function handleSubmit(event) {
     console.error(error);
     if (error.message.includes("row-level-security") || error.message.includes("blocked_dates") || error.message.includes("blocked_slots")) {
       setStatus("warn", "Selected date/session is blocked by clinic. Please choose another slot.");
+      showToast("Selected date/session is blocked by clinic.", "warn");
       await renderSlots();
       return;
     }
     setStatus("error", "Unable to submit request right now. Please call clinic.");
+    showToast("Unable to submit right now. Please call clinic.", "error");
     return;
   }
 
   await trackEvent("appointment_submitted", payload.service);
   setStatus("ok", "Appointment request submitted. Clinic will review and confirm on WhatsApp.");
+  showToast("Appointment request submitted successfully.", "success");
   form.reset();
   dateInput.value = normalizeDateToYMD(new Date());
   await renderSlots();
@@ -262,6 +392,22 @@ function initDate() {
   const today = normalizeDateToYMD(new Date());
   dateInput.min = today;
   dateInput.value = today;
+}
+
+function applyBookingWindow() {
+  if (!dateInput) {
+    return;
+  }
+  const today = todayYmdInKolkata();
+  const windowDays = getBookingWindowDays();
+  const maxDateObj = new Date(`${today}T00:00:00+05:30`);
+  maxDateObj.setDate(maxDateObj.getDate() + windowDays);
+  const max = normalizeDateToYMD(maxDateObj);
+  dateInput.min = today;
+  dateInput.max = max;
+  if (!dateInput.value || dateInput.value < today || dateInput.value > max) {
+    dateInput.value = today;
+  }
 }
 
 function setupMobileBookSwitcher() {
@@ -298,9 +444,11 @@ function setupMobileSectionNav() {
 
   function setActiveNav(target) {
     mobileSectionLinks.forEach((link) => {
-      const active = link.dataset.mobileSection === target;
-      link.classList.toggle("active", active);
-      link.setAttribute("aria-current", active ? "page" : "false");
+      if (link.classList.contains("nav-link")) {
+        const active = link.dataset.mobileSection === target;
+        link.classList.toggle("active", active);
+        link.setAttribute("aria-current", active ? "page" : "false");
+      }
     });
   }
 
@@ -347,6 +495,7 @@ async function wire() {
   loadServices();
   initDate();
   await loadClinicSettings();
+  applyBookingWindow();
   await renderSlots();
   trackEvent("page_visit", "home");
 
