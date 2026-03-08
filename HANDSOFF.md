@@ -1,59 +1,56 @@
 # Sarvam Dental Clinic - Project Handoff
 
-## 1. Project Summary
-- Public website with online appointment requests.
-- Admin dashboard for dentist/staff to manage appointments.
-- Supabase backend for auth, data, and policies.
-- Netlify hosting and optional serverless function integration.
-- Mobile-specific UX improvements layered without breaking desktop/tablet.
+## Project Snapshot
+- Project type: public dental booking site + private admin dashboard.
+- Clinic: Sarvam Dental Clinic.
+- Timezone: Asia/Kolkata.
+- Working hours: 10:30 AM to 6:30 PM.
+- Slot duration: configurable (30 min or 60 min) from admin settings.
+- Status lifecycle: Pending, Approved, Rejected, Completed, No-show.
+- Deployment: Netlify.
+- Backend/Auth/DB: Supabase.
 
-Production URL:
+Production:
 - https://sarvamdentalclinic.netlify.app/
 
 Repository:
 - https://github.com/rameshdhv/svc
 
-## 2. Tech Stack
-- Frontend: static HTML/CSS/JS (no framework)
-- Backend: Supabase (Postgres + Auth + RLS + RPC)
-- Hosting: Netlify
-- Optional messaging: Twilio WhatsApp (currently disabled by user)
+## Tech Stack
+- Static frontend: HTML/CSS/Vanilla JS.
+- Supabase: Postgres + Auth + RLS + Realtime.
+- Netlify Functions: secure maintenance actions (reset past data).
+- Optional integration path: Twilio WhatsApp API (currently disabled; using WhatsApp redirect links).
 
-## 3. Key Pages
-- `index.html` - public landing + services + booking form
-- `gallery.html` - treatment gallery
-- `doctors-login.html` - admin/staff login + dashboard
-- `admin.html` - redirect helper to doctors login
+## Pages
+- `index.html`: landing page, services, booking form, about/locate sections.
+- `gallery.html`: before/after treatment gallery.
+- `doctors-login.html`: dentist/staff login + dashboard.
+- `admin.html`: redirect helper to doctors login route.
 
-## 4. Important JS Files
+## Core Frontend Logic
 - `assets/js/main.js`
-  - public booking flow
-  - slot rendering + blocked date/session checks
-  - hides expired same-day slots in Asia/Kolkata
-  - booking window days enforcement from clinic settings
-  - permanent weekly-off day handling from clinic settings
-  - mobile section switching (Home/Services/Book)
-  - mobile booking view switch (Appointment Form / Clinic Info)
-  - footer about/locate mobile routing behavior
+  - booking form + slot selection.
+  - hides expired same-day slots.
+  - limits booking window by configurable next N days.
+  - reads weekly-off and block rules from settings/tables.
+  - mobile section switching and mobile booking tab behavior.
 - `assets/js/admin.js`
-  - auth and password reset
-  - dashboard load and filtering
-  - appointment status transitions (approve/reject/unblock etc.)
-  - timeline rendering and actions
-  - blocking/unblocking dates and sessions
-  - emergency session picker modal with bulk slot selection
-  - clinic settings:
-    - slot duration + effective date
-    - booking window days
-    - permanent weekly off days
-  - secure reset past data by month with admin password verification
-  - manual booking
+  - login/reset password flow.
+  - dashboard analytics + timeline + filters.
+  - appointment status actions.
+  - date and session blocking controls.
+  - emergency bulk session picker (modal with multi-select chips).
+  - settings save logic (duration, visibility, weekly off).
+  - weekly-off conflict protection against active appointments.
+  - realtime booking notification (bottom-left + sound) when dashboard open.
+  - secure reset past data via Netlify function.
 
-## 5. Database / Supabase
+## Database (Supabase)
 Primary schema file:
 - `supabase/schema.sql`
 
-Core tables in use:
+Main tables:
 - `appointments`
 - `appointment_status_history`
 - `admin_profiles`
@@ -63,89 +60,69 @@ Core tables in use:
 - `clinic_settings`
 
 Auth model:
-- Admin/staff login via Supabase Auth email/password
-- Access control through `admin_profiles` + RLS policies
+- Dentist/staff sign in via Supabase email+password.
+- Access gate uses `admin_profiles` + RLS.
 
-## 6. Appointment Workflow
-1. Customer requests slot -> `Pending`
-2. Staff/Dentist in dashboard:
-   - `Approved` (slot effectively consumed)
-   - `Rejected`
-   - `Completed`
-   - `No-show`
-3. Approved future entries support `Unblock` with mandatory reason.
-4. Blocking controls:
-   - Holiday/date range blocking
-   - Emergency session slot blocking
-5. Customer-side slot visibility rules:
-   - Past slots for today are hidden automatically
-   - Booking is limited to configurable next N days
-   - Weekly off days are closed
+## Functional Rules Implemented
+- Customer slot colors:
+  - available: green
+  - unavailable/consumed: grey
+- Approved slots become unavailable.
+- Past slots for today are hidden on customer side.
+- Customer sees slots for next N days (configurable in settings).
+- Weekly off days close booking.
+- Weekly off save is blocked if conflicting Pending/Approved appointments exist.
+- Holiday range blocking and emergency session blocking supported.
+- Approved future appointments can be Unblocked with mandatory reason.
+- Staff manual booking exists and opens WhatsApp notification draft.
 
-## 7. Mobile UX Decisions Implemented
-- Mobile-only section mode:
-  - Nav `Home/Services/Book` acts like content switcher
-  - Only one section shown at a time on phones
-- Services on mobile are list-based (no auto-swiping)
-- Slot buttons in booking form: 3-column mobile grid
-- Footer links `About Us` and `Locate Us` route correctly on mobile
-- Mobile timeline in admin made more compact
-- Caret/cursor blinking reduced on non-input elements
+## Dashboard UX Notes
+- Top controls: Refresh, Settings, Logout.
+- Timeline is compact and collapsible.
+- Emergency session blocking uses a dedicated picker modal for reliable desktop/tablet/mobile behavior.
+- Toast feedback for major actions.
+- Live booking alerts appear at bottom-left with notification tone.
 
-Desktop/tablet layouts intentionally preserved.
+## Mobile-Specific Decisions
+- Mobile has section-based navigation behavior for Home/Services/Book.
+- Services shown as list in mobile section view.
+- Booking slots on mobile use compact grid.
+- Footer About/Locate navigation fixed for mobile flow.
+- Desktop/tablet layouts intentionally preserved unless explicitly requested.
 
-## 8. Environment Variables (Netlify)
-Used/expected:
+## Environment Variables
+Required for runtime:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (or Supabase Secret Key equivalent for server-side)
 
-Used by secure reset function:
-- `SUPABASE_ANON_KEY` (password re-verification)
-- `SUPABASE_SERVICE_ROLE_KEY` (admin data cleanup operations)
+Required for Netlify function (server-side only):
+- `SUPABASE_SERVICE_ROLE_KEY` (or Supabase Secret key equivalent)
 
-Optional (if Twilio re-enabled):
+Optional (if Twilio API enabled later):
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_WHATSAPP_FROM`
 
-## 9. Local Development
-From project root:
+## Local Development
 ```bash
 npm install
 npx netlify dev --port 8888 --staticServerPort 4001
 ```
 
-Pages:
+Local URLs:
 - `http://localhost:8888/index.html`
 - `http://localhost:8888/gallery.html`
 - `http://localhost:8888/doctors-login.html`
 
-## 10. Deployment
-- Netlify deploys from GitHub repo.
-- No build step required; publish directory is root (`.`).
-- `netlify.toml` already configured.
+## Deployment
+- Netlify connected to GitHub `main`.
+- Publish directory: repository root (`.`).
+- `netlify.toml` is configured.
 
-## 11. Current Known Notes
-- Twilio currently disabled by user; site uses WhatsApp redirect flow from browser in admin actions.
-- Admin portal is not linked openly from public nav; accessed directly by URL:
-  - `/doctors-login.html`
-- Dashboard header controls:
-  - `Refresh`
-  - `Settings`
-
-## 12. Backup and Continuity
-Keep these safe:
-- GitHub repo
-- Supabase credentials and project details
-- Netlify site settings/env vars
-- this `HANDSOFF.md`
-- `MAINTENANCE_BACKUP_GUIDE.txt`
-
-If project moves to another IDE/system:
-1. Clone repo
-2. Re-add env vars
-3. Run local Netlify dev
-4. Verify booking + admin flows
-
-
+## Continuity / Recovery
+If moving to new IDE or after context loss:
+1. Clone repo.
+2. Re-add Netlify/Supabase env vars.
+3. Run local with `netlify dev`.
+4. Verify booking + admin flows.
+5. Use `DENTIST_APP_REBUILD_BLUEPRINT.txt` as complete build spec.

@@ -1,0 +1,160 @@
+DENTIST APP REBUILD BLUEPRINT (NO-QUESTIONS VERSION)
+====================================================
+
+Purpose
+-------
+Recreate the same Sarvam Dental Clinic website + admin dashboard end-to-end without additional requirement gathering.
+
+Brand + Clinic Data
+-------------------
+- Clinic name: Sarvam Dental Clinic
+- Public phone on website: 8328010083
+- Timezone: Asia/Kolkata
+- Hours: 10:30 to 18:30
+- Services currently: Teeth Cleaning, Root Canal, Braces
+
+Core Product Scope
+------------------
+1) Public website:
+   - Modern landing page with hero + treatment room image.
+   - Services section with more detail and small clip-art style icons.
+   - Booking section with patient form and slot picker.
+   - About Us and Locate Us blocks.
+   - Google map support via Show Map / Open in Google Maps.
+   - Gallery page for before/after treatment images.
+
+2) Admin dashboard (doctors login route only):
+   - Email+password login via Supabase Auth.
+   - Manage appointment statuses.
+   - Filters + analytics cards.
+   - Day timeline view (compact, collapsible).
+   - Emergency session blocking.
+   - Holiday range blocking.
+   - Manual booking by staff.
+   - Settings panel for slot behavior and maintenance actions.
+
+Pages + Routing
+---------------
+- /index.html            (public)
+- /gallery.html          (public)
+- /doctors-login.html    (private/admin)
+- /admin.html            (redirect helper to doctors login)
+
+Hide admin from customers
+-------------------------
+- Do not show doctors login link in public navigation.
+- Access admin directly by URL only.
+
+Booking Behavior Rules
+----------------------
+- Slot interval configurable from settings (30 or 60 min).
+- Customer may book only in next N days (N configurable).
+- Same-day past slots are hidden automatically.
+- Weekly off days disable booking.
+- Blocked date ranges disable booking.
+- Blocked sessions disable booking.
+- Approved appointment consumes slot for that date/time.
+
+Appointment Lifecycle
+---------------------
+- Pending -> Approved / Rejected -> Completed / No-show
+- Approved can be unblocked with mandatory reason.
+- On approve/reject: temporary WhatsApp redirect message flow.
+
+WhatsApp behavior (current)
+---------------------------
+- No direct API dependency required for now.
+- Open prefilled wa.me URL on status changes/manual booking.
+- Keep structure ready to plug Twilio API later.
+
+Admin Settings Requirements
+---------------------------
+- Slot duration (30 / 60 mins).
+- Effective date for duration change.
+- Validation: do not allow duration change if active appointments exist on effective date.
+- Booking window days input (e.g., 10).
+- Permanent weekly holidays (checkbox list Sunday-Saturday).
+- Validation: weekly holidays must NOT save if any future Pending/Approved appointments fall on those weekdays.
+- Reset past data (by cutoff month) from settings:
+  - confirmation prompt
+  - admin password confirmation required
+  - run via secure Netlify Function using service role key
+
+Emergency Blocking UX
+---------------------
+- Must support reliable bulk selection on all devices.
+- Use dedicated modal picker with clickable slot chips.
+- Controls: Select All, Clear, Apply, Cancel.
+- Save selected sessions in one operation.
+
+Realtime Dentist Notification
+-----------------------------
+When dashboard is open and new appointment is inserted:
+- Show bottom-left alert toast with patient/date/slot summary.
+- Play short notification sound.
+- Auto-refresh dashboard data.
+
+Analytics (industry practical set)
+----------------------------------
+- Page visits
+- Total bookings
+- Pending count
+- Approval rate
+
+Security + Compliance Decisions
+-------------------------------
+- Dentist/staff auth through Supabase email+password.
+- Password reset handled from login page flow.
+- RLS enforced for admin data actions.
+- Secrets only in Netlify env vars; never frontend.
+
+Supabase Tables (minimum)
+-------------------------
+- appointments
+- appointment_status_history
+- admin_profiles
+- visitor_events
+- blocked_dates
+- blocked_slots
+- clinic_settings
+
+Admin Authorization Model
+-------------------------
+- User must exist in auth.users.
+- User must be present in public.admin_profiles with role (dentist/staff).
+
+Design + Responsive Expectations
+--------------------------------
+- Desktop/tablet should remain polished and content-rich.
+- Mobile should avoid long continuous pages where possible.
+- Mobile booking slots should be compact grid.
+- Admin timeline should be compact on mobile.
+- Keep clean, non-cluttered UI.
+
+Deployment Model
+----------------
+- Host on Netlify.
+- Supabase as backend.
+- Works both in production and local development.
+
+Local Dev Commands
+------------------
+npm install
+npx netlify dev --port 8888 --staticServerPort 4001
+
+Operational Checklist Before Demo
+---------------------------------
+1. Customer booking works.
+2. Approve/reject works.
+3. Unblock reason is enforced.
+4. Weekly holiday conflict prevention works.
+5. Realtime alert + sound works.
+6. Emergency bulk blocking works.
+7. Mobile layout sanity check done.
+8. Password reset flow works.
+
+Git + Handoff Discipline
+-----------------------
+- Keep HANDSOFF.md updated after major behavior changes.
+- Keep MAINTENANCE_BACKUP_GUIDE.txt updated for deploy/ops changes.
+- Use this blueprint file as exact spec if rebuilding from scratch.

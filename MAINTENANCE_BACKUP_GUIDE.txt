@@ -24,6 +24,7 @@ Recommended: keep these in a private password manager + private ops doc.
 ------------------------------------
 - README.md (quick setup)
 - HANDSOFF.md (project context and architecture)
+- DENTIST_APP_REBUILD_BLUEPRINT.txt (full rebuild spec)
 - supabase/schema.sql (DB schema + RLS)
 - netlify.toml (deploy/runtime config)
 - .env.example (required env variables list)

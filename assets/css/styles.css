@@ -808,6 +808,13 @@ td {
   width: min(360px, 92vw);
 }
 
+.toast-stack--bottom-left {
+  top: auto;
+  right: auto;
+  left: 16px;
+  bottom: 16px;
+}
+
 .toast {
   border-radius: 12px;
   border: 1px solid #d9e7df;
@@ -1105,8 +1112,15 @@ footer {
   .toast-stack {
     left: 50%;
     right: auto;
+    bottom: auto;
     transform: translateX(-50%);
     width: min(92vw, 360px);
+  }
+
+  .toast-stack--bottom-left {
+    left: 50%;
+    bottom: 16px;
+    top: auto;
   }
 
   table,

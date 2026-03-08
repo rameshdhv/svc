@@ -24,6 +24,7 @@ const confirmNewPassword = document.getElementById("confirmNewPassword");
 const loginStatus = document.getElementById("loginStatus");
 const appStatus = document.getElementById("appStatus");
 const toastRoot = document.getElementById("toastRoot");
+const liveAlertRoot = document.getElementById("liveAlertRoot");
 const dashboard = document.getElementById("dashboard");
 const refreshDashboardBtn = document.getElementById("refreshDashboardBtn");
 const tableBody = document.getElementById("appointmentsBody");
@@ -93,6 +94,8 @@ let pendingStatusAction = null;
 let forgotCooldownTimer = null;
 let clinicSettings = null;
 let slotPickerDraftSelection = new Set();
+let liveBookingChannel = null;
+let alertAudioContext = null;
 const FORGOT_COOLDOWN_SECONDS = 90;
 const FORGOT_COOLDOWN_KEY = "sarvam_forgot_cooldown_until";
 
@@ -113,6 +116,55 @@ function showToast(message, type = "success") {
   setTimeout(() => {
     toast.remove();
   }, 3200);
+}
+
+function showLiveAlert(message, type = "success") {
+  if (!liveAlertRoot || !message) {
+    return;
+  }
+  const alert = document.createElement("div");
+  alert.className = `toast ${type}`;
+  alert.textContent = message;
+  alert.setAttribute("role", "status");
+  liveAlertRoot.appendChild(alert);
+  setTimeout(() => {
+    alert.remove();
+  }, 5000);
+}
+
+function ensureAlertAudioContext() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) {
+    return null;
+  }
+  if (!alertAudioContext) {
+    alertAudioContext = new Ctx();
+  }
+  if (alertAudioContext.state === "suspended") {
+    alertAudioContext.resume().catch(() => {});
+  }
+  return alertAudioContext;
+}
+
+function playBookingNotificationTone() {
+  const ctx = ensureAlertAudioContext();
+  if (!ctx) {
+    return;
+  }
+  const now = ctx.currentTime;
+  [0, 0.22].forEach((offset) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, now + offset);
+    gain.gain.setValueAtTime(0.0001, now + offset);
+    gain.gain.exponentialRampToValueAtTime(0.15, now + offset + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.17);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + offset);
+    osc.stop(now + offset + 0.18);
+  });
 }
 
 function minutesToLabel(value) {
@@ -306,6 +358,7 @@ async function handleLogin(event) {
   }
 
   setStatus(loginStatus, "Login successful.", "ok");
+  ensureAlertAudioContext();
 
   const admin = await isAdmin();
   if (!admin) {
@@ -317,6 +370,7 @@ async function handleLogin(event) {
   document.getElementById("authCard").hidden = true;
   dashboard.hidden = false;
   setStatus(appStatus, "Logged in. Loading appointments...", "ok");
+  startLiveBookingNotifications();
   await loadDashboard();
 }
 
@@ -575,6 +629,54 @@ async function hasActiveAppointments(dateYmd) {
   return (data || []).length > 0;
 }
 
+function weekdayNameFromYmd(dateYmd) {
+  const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const date = new Date(`${dateYmd}T00:00:00+05:30`);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return weekdayNames[date.getDay()] || "";
+}
+
+async function findWeeklyOffConflicts(weeklyOffDays, fromDateYmd) {
+  if (!Array.isArray(weeklyOffDays) || weeklyOffDays.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("id, patient_name, preferred_date, preferred_slot, status")
+    .gte("preferred_date", fromDateYmd)
+    .in("status", ["Pending", "Approved"])
+    .order("preferred_date", { ascending: true })
+    .limit(500);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []).filter((item) => weeklyOffDays.includes(weekdayNameFromYmd(item.preferred_date)));
+}
+
+function startLiveBookingNotifications() {
+  if (liveBookingChannel) {
+    return;
+  }
+  liveBookingChannel = supabase
+    .channel("live-booking-alerts")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "appointments" }, async (payload) => {
+      const row = payload?.new || {};
+      if ((row.status || "Pending") !== "Pending") {
+        return;
+      }
+      const label = `${row.patient_name || "New patient"} requested ${row.preferred_date || ""} ${row.preferred_slot || ""}`.trim();
+      showLiveAlert(`New booking request: ${label}`, "success");
+      playBookingNotificationTone();
+      await loadDashboard();
+    })
+    .subscribe();
+}
+
 async function saveClinicSettings(event) {
   event.preventDefault();
   const uid = await currentUserId();
@@ -598,6 +700,18 @@ async function saveClinicSettings(event) {
     const hasActive = await hasActiveAppointments(effectiveDate);
     if (hasActive) {
       setStatus(appStatus, "Change blocked: active appointments exist on selected date. Choose another date to avoid clashes.", "warn");
+      return;
+    }
+
+    const weeklyOffConflicts = await findWeeklyOffConflicts(weeklyOffDays, todayYmdInKolkata());
+    if (weeklyOffConflicts.length > 0) {
+      const sample = weeklyOffConflicts[0];
+      setStatus(
+        appStatus,
+        `Weekly off change blocked: appointments exist on holiday day(s). Example: ${sample.preferred_date} ${sample.preferred_slot} (${sample.patient_name}).`,
+        "warn"
+      );
+      showToast("Cannot save weekly off. Active appointments exist on selected holiday days.", "warn");
       return;
     }
   } catch (checkError) {
@@ -1135,8 +1249,10 @@ async function init() {
   if (sessionData.session) {
     const admin = await isAdmin();
     if (admin) {
+      ensureAlertAudioContext();
       document.getElementById("authCard").hidden = true;
       dashboard.hidden = false;
+      startLiveBookingNotifications();
       await loadDashboard();
     }
   }
