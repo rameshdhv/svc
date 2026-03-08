@@ -1,0 +1,277 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sarvam Dental Clinic | Doctors Login</title>
+  <meta name="description" content="Doctor and staff dashboard for appointment approvals and analytics." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=12" />
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="logo">Sarvam Dental Clinic</div>
+      <nav class="nav-links" aria-label="Primary">
+        <a class="nav-link" href="./index.html#home">Home</a>
+        <a class="nav-link" href="./index.html#services">Services</a>
+        <a class="nav-link" href="./index.html#book">Book</a>
+        <a class="nav-link active" href="./doctors-login.html">Doctors Login</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="cta-call" href="tel:+918328010083">Call: 8328010083</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container admin-shell">
+    <section class="card" id="authCard">
+      <h1 style="font-size:2rem;">Doctor Login</h1>
+      <p class="lead">Dentist and staff can access dashboard using email and password.</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">Email Address</label>
+          <input id="email" type="email" required placeholder="doctor@clinic.com" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" required placeholder="Enter password" />
+        </div>
+        <button type="submit" class="btn">Login</button>
+      </form>
+      <button id="forgotPasswordBtn" type="button" class="btn secondary" style="margin-top:8px;">Forgot Password?</button>
+
+      <form id="forgotForm" hidden style="margin-top: 10px;">
+        <div class="field">
+          <label for="forgotEmail">Registered Email</label>
+          <input id="forgotEmail" type="email" placeholder="doctor@clinic.com" />
+        </div>
+        <button id="forgotSubmitBtn" type="submit" class="btn">Send Reset Link</button>
+        <small id="forgotCooldownText" class="lead" style="display:block; margin-top:6px;"></small>
+      </form>
+
+      <form id="resetForm" hidden style="margin-top: 10px;">
+        <div class="field">
+          <label for="newPassword">New Password</label>
+          <input id="newPassword" type="password" placeholder="Enter new password" />
+        </div>
+        <div class="field">
+          <label for="confirmNewPassword">Confirm Password</label>
+          <input id="confirmNewPassword" type="password" placeholder="Re-enter new password" />
+        </div>
+        <button type="submit" class="btn">Update Password</button>
+      </form>
+
+      <div class="status" id="loginStatus" aria-live="polite"></div>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="card">
+        <div style="display:flex; justify-content: space-between; gap:8px; align-items:center; flex-wrap:wrap;">
+          <h2 style="font-size:1.8rem;">Appointments Dashboard</h2>
+          <div class="inline-actions">
+            <button id="refreshDashboardBtn" class="btn secondary" type="button">Refresh</button>
+            <button id="openSettingsBtn" class="icon-btn" type="button" aria-label="Open settings" title="Settings">⚙</button>
+            <button id="logout" class="btn secondary" type="button">Logout</button>
+          </div>
+        </div>
+        <div class="status" id="appStatus" aria-live="polite"></div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <h3 style="margin-bottom:10px;">Analytics Snapshot</h3>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="label">Page Visits</div><div class="value" id="kpiVisits">0</div></div>
+          <div class="kpi"><div class="label">Bookings</div><div class="value" id="kpiBookings">0</div></div>
+          <div class="kpi"><div class="label">Pending</div><div class="value" id="kpiPending">0</div></div>
+          <div class="kpi"><div class="label">Approval Rate</div><div class="value" id="kpiApproval">0%</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+          <h3>Day Timeline View</h3>
+          <div class="inline-actions">
+            <input id="timelineDate" type="date" />
+            <button id="refreshTimelineBtn" type="button" class="btn secondary">Refresh</button>
+            <button id="toggleTimelineBtn" type="button" class="btn secondary">Collapse</button>
+          </div>
+        </div>
+        <div id="timelineContent">
+          <p id="timelineSummary" class="lead" style="margin: 8px 0 10px;"></p>
+          <div id="timelineBody" class="timeline-grid"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px; overflow-x:auto;">
+        <h3 style="margin-bottom: 10px;">Appointments</h3>
+        <div class="toolbar" style="margin-bottom: 10px;">
+          <select id="statusFilter">
+            <option value="">All statuses</option>
+            <option>Pending</option>
+            <option>Approved</option>
+            <option>Rejected</option>
+            <option>Completed</option>
+            <option>No-show</option>
+          </select>
+          <select id="serviceFilter">
+            <option value="">All services</option>
+            <option>Teeth Cleaning</option>
+            <option>Root Canal</option>
+            <option>Braces</option>
+          </select>
+          <input id="fromDate" type="date" />
+          <input id="toDate" type="date" />
+          <div style="display:flex; gap:8px;">
+            <button id="applyFilters" type="button" class="btn">Apply</button>
+            <button id="resetFilters" type="button" class="btn secondary">Reset</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Date & Slot</th>
+              <th>Service</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="appointmentsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <h3 style="margin-bottom:10px;">Manual Booking (By Staff)</h3>
+        <form id="manualBookingForm">
+          <div class="toolbar">
+            <input id="manualName" type="text" placeholder="Patient name" required />
+            <input id="manualPhone" type="tel" placeholder="Patient phone" required />
+            <input id="manualDate" type="date" required />
+            <select id="manualSlot" required>
+              <option value="">Select slot</option>
+            </select>
+            <select id="manualService" required>
+              <option value="">Select service</option>
+            </select>
+          </div>
+          <div class="toolbar" style="margin-top: 8px;">
+            <input id="manualNotes" type="text" placeholder="Notes (optional)" />
+            <div></div>
+            <div></div>
+            <div></div>
+            <button type="submit" class="btn">Book & Notify on WhatsApp</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <h3 style="margin-bottom:10px;">Emergency Session Blocking</h3>
+        <form id="slotBlockForm">
+          <div class="toolbar">
+            <input id="slotBlockDate" type="date" required />
+            <select id="slotBlockLabel" required>
+              <option value="">Select session slot</option>
+            </select>
+            <input id="slotBlockReason" type="text" placeholder="Reason (optional)" />
+            <div></div>
+            <button type="submit" class="btn">Block Session</button>
+          </div>
+        </form>
+        <div style="margin-top: 10px; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Session</th>
+                <th>Reason</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="blockedSlotsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <h3 style="margin-bottom:10px;">Holiday / Leave Blocking</h3>
+        <form id="blockForm">
+          <div class="toolbar">
+            <input id="blockFromDate" type="date" required />
+            <input id="blockToDate" type="date" required />
+            <input id="blockReason" type="text" placeholder="Reason (optional)" />
+            <div></div>
+            <button id="addBlockBtn" type="submit" class="btn">Block Dates</button>
+          </div>
+        </form>
+        <div style="margin-top: 10px; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>To</th>
+                <th>Reason</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="blockedDatesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="confirmModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <h3 id="confirmTitle">Confirm Status Change</h3>
+      <p id="confirmMessage" class="lead" style="margin-top: 6px;"></p>
+      <div id="confirmReasonWrap" class="field" style="margin-top: 8px;" hidden>
+        <label for="confirmReason">Reason (required for unblocking)</label>
+        <textarea id="confirmReason" placeholder="Enter reason for unblocking"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="confirmCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="confirmOk" class="btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <h3 id="settingsTitle">Clinic Settings</h3>
+      <p class="lead" style="margin-top:6px;">Set slot duration. Change applies from selected date only when there are no active appointments for that date.</p>
+      <form id="settingsForm">
+        <div class="field">
+          <label for="slotDurationSelect">Slot Duration</label>
+          <select id="slotDurationSelect" required>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="slotEffectiveDate">Effective From Date</label>
+          <input id="slotEffectiveDate" type="date" required />
+        </div>
+        <div class="modal-actions">
+          <button id="settingsCancelBtn" type="button" class="btn secondary">Cancel</button>
+          <button type="submit" class="btn">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="./assets/js/admin.js?v=17"></script>
+</body>
+</html>
+
+
+
+
+
+
+

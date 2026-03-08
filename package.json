@@ -1,0 +1,13 @@
+{
+  "name": "sarvam-dental-clinic",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "netlify dev",
+    "netlify:dev": "netlify dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.0",
+    "twilio": "^5.7.0"
+  }
+}

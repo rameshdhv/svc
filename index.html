@@ -1,0 +1,208 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sarvam Dental Clinic | Book Appointment</title>
+  <meta name="description" content="Sarvam Dental Clinic provides clean and modern dental care. Book your appointment online." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=12" />
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="logo" id="clinicName">Sarvam Dental Clinic</div>
+      <nav class="nav-links" aria-label="Primary">
+        <a class="nav-link active" href="#home">Home</a>
+        <a class="nav-link" href="#services">Services</a>
+        <a class="nav-link" href="./gallery.html">Gallery</a>
+        <a class="nav-link" href="#book">Book</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="cta-call dial" href="tel:+918328010083">Call: <span id="clinicPhone">8328010083</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero" id="home">
+      <article class="card hero-card">
+        <span class="eyebrow">Dental Excellence</span>
+        <h1>Healthy smiles, precise care, and easy online booking.</h1>
+        <p class="lead">Book a slot in seconds. Available slots are shown in green. Approved slots are shown in grey.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#book">Book Appointment</a>
+          <a class="btn secondary dial" href="tel:+918328010083">Talk to Clinic</a>
+        </div>
+      </article>
+      <aside class="hero-media" aria-label="Dentist operating room">
+        <img
+          src="./assets/images/dental-operating-room-02.jpg"
+          alt="Modern dentist operating room with dental chair and equipment"
+          loading="eager"
+        />
+        <div class="hero-media-tag">
+          Advanced Dental Setup
+        </div>
+      </aside>
+    </section>
+
+    <section class="section" id="services">
+      <h2>Detailed Services</h2>
+      <p class="lead">Every treatment begins with diagnosis, explanation, and a step-by-step care plan.</p>
+      <div class="services services-detailed" style="margin-top: 12px;">
+        <article class="mini service-detail-card">
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">🪥</span>
+            <h3>Teeth Cleaning & Gum Care</h3>
+          </div>
+          <p class="lead">Deep cleaning to remove plaque and stains while protecting gum health.</p>
+          <ul class="service-points">
+            <li>Scaling and polishing</li>
+            <li>Bad-breath reduction support</li>
+            <li>Preventive oral hygiene guidance</li>
+          </ul>
+        </article>
+        <article class="mini service-detail-card">
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">🦷</span>
+            <h3>Root Canal Treatment</h3>
+          </div>
+          <p class="lead">Save infected teeth with pain-relief focused, precision endodontic care.</p>
+          <ul class="service-points">
+            <li>Tooth pain and infection treatment</li>
+            <li>Canal cleaning and sealing</li>
+            <li>Post-treatment restoration planning</li>
+          </ul>
+        </article>
+        <article class="mini service-detail-card">
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">😁</span>
+            <h3>Braces & Alignment</h3>
+          </div>
+          <p class="lead">Structured alignment plans to improve bite, aesthetics, and oral function.</p>
+          <ul class="service-points">
+            <li>Smile and bite assessment</li>
+            <li>Regular adjustment follow-ups</li>
+            <li>Retention and long-term care advice</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="book">
+      <h2>Book Appointment</h2>
+      <p class="lead">Submit your request. Status starts as Pending, and clinic staff will approve/review in dashboard.</p>
+
+      <div class="booking-grid">
+        <div class="booking-side">
+          <div class="details">
+            <h3 style="font-size:1.5rem;">Need help?</h3>
+            <p>For urgent dental pain, call clinic directly.</p>
+            <ul>
+              <li>Phone: <a class="dial" href="tel:+918328010083">8328010083</a></li>
+              <li>WhatsApp confirmation after approval</li>
+              <li>Timezone: Asia/Kolkata</li>
+            </ul>
+          </div>
+
+          <article class="card info-card" id="about-us">
+            <h3>About Us</h3>
+            <p class="lead">
+              Sarvam Dental Clinic follows a patient-first approach with clear diagnosis, gentle procedures, and practical after-care guidance.
+              We focus on long-term oral health and transparent treatment planning for children and adults.
+            </p>
+          </article>
+
+          <article class="card info-card" id="locate-us">
+            <h3>Locate Us</h3>
+            <p class="lead">Shop No:3, 49/2, Garudacharpalya Main Rd, Maheswari Nagar, Mahadevapura, Bengaluru, Karnataka 560048</p>
+            <div class="inline-actions">
+              <button id="showMapBtn" type="button" class="btn">Show Map</button>
+              <a
+                class="btn secondary"
+                href="https://www.google.com/maps/dir//SARVAM+DENTAL+CLINIC,+Shop+No:3,+49%2F2,+Garudacharpalya+Main+Rd,+Maheswari+Nagar,+Mahadevapura,+Bengaluru,+Karnataka+560048/@12.9829735,77.687969,15z/data=!4m8!4m7!1m0!1m5!1m1!1s0x3bae1164a28ddb6b:0x222f7f974a03d5d8!2m2!1d77.6927031!2d12.9908483?entry=ttu&g_ep=EgoyMDI2MDMwNC4xIKXMDSoASAFQAw%3D%3D"
+                target="_blank"
+                rel="noopener">
+                Open in Google Maps
+              </a>
+            </div>
+            <div id="mapWrap" class="map-wrap" hidden>
+              <iframe
+                title="Sarvam Dental Clinic Map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                src="https://www.google.com/maps?q=Shop+No:3,+49/2,+Garudacharpalya+Main+Rd,+Maheswari+Nagar,+Mahadevapura,+Bengaluru,+Karnataka+560048&output=embed">
+              </iframe>
+            </div>
+          </article>
+        </div>
+
+        <form id="appointmentForm" novalidate>
+          <div class="row">
+            <div class="field">
+              <label for="name">Full Name</label>
+              <input id="name" name="name" required placeholder="Patient name" />
+            </div>
+            <div class="field">
+              <label for="phone">Mobile Number</label>
+              <input id="phone" name="phone" type="tel" required pattern="[0-9]{10}" placeholder="10-digit number" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="date">Preferred Date</label>
+              <input id="date" name="date" type="date" required />
+            </div>
+            <div class="field">
+              <label for="service">Service</label>
+              <select id="service" name="service" required>
+                <option value="">Select service</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field slot-wrap">
+            <label>Available Slots</label>
+            <div id="slots" class="slot-grid" aria-live="polite"></div>
+            <input id="selectedSlot" name="selectedSlot" type="hidden" required />
+            <small id="selectedSlotText">No slot selected</small>
+            <div id="blockedNotice" class="status warn" style="display:none; margin-top:6px;"></div>
+          </div>
+
+          <div class="field">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" placeholder="Tell us your concern"></textarea>
+          </div>
+
+          <button type="submit" class="btn" style="width:100%;">Request Appointment</button>
+          <div class="status" id="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="#about-us">About Us</a>
+        <a href="#locate-us" id="locateLink">Locate Us</a>
+      </div>
+      <div>&copy; <span id="year"></span> Sarvam Dental Clinic</div>
+    </div>
+  </footer>
+
+  <script type="module" src="./assets/js/main.js?v=6"></script>
+</body>
+</html>
+
+
+
+
+
+
+
