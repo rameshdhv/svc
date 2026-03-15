@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./assets/css/styles.css?v=27" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=28" />
 </head>
 <body>
   <header>
@@ -48,7 +48,6 @@
         <button type="submit" class="btn">Login</button>
       </form>
       <button id="forgotPasswordBtn" type="button" class="btn secondary" style="margin-top:8px;">Forgot Password?</button>
-      <button id="resendConfirmationBtn" type="button" class="btn secondary" style="margin-top:8px;">Resend Confirmation Link</button>
 
       <form id="confirmLinkForm" hidden class="auth-subflow" style="margin-top: 10px;">
         <div class="auth-helper-card">
@@ -170,7 +169,12 @@
       </div>
 
       <div class="card" style="margin-top: 12px;">
-        <h3 style="margin-bottom:10px;">Analytics Snapshot</h3>
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+          <h3>Analytics Snapshot</h3>
+          <div class="inline-actions">
+            <a class="btn secondary" href="./analytics.html">View Insights ↗</a>
+          </div>
+        </div>
         <div class="kpi-grid">
           <div class="kpi"><div class="label">Page Visits</div><div class="value" id="kpiVisits">0</div></div>
           <div class="kpi"><div class="label">Bookings</div><div class="value" id="kpiBookings">0</div></div>
@@ -526,7 +530,7 @@
 
   <div id="liveAlertRoot" class="toast-stack toast-stack--bottom-left" aria-live="polite" aria-atomic="true"></div>
   <div id="toastRoot" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
-  <script type="module" src="./assets/js/admin.js?v=51"></script>
+  <script type="module" src="./assets/js/admin.js?v=52"></script>
 </body>
 </html>
 

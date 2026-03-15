@@ -24,14 +24,17 @@ Core Product Scope
    - Gallery page for before/after treatment images.
 
 2) Admin dashboard (doctors login route only):
+   - Dentist/staff role switch at login.
    - Email+password login via Supabase Auth.
+   - TOTP authenticator setup and verify flow.
+   - Forgot password flow with clear email-sent and reset-password states.
    - Manage appointment statuses.
    - Filters + analytics cards.
-   - Day timeline view (compact, collapsible).
+   - Day snapshot view (compact, collapsible).
    - Emergency session blocking.
    - Holiday range blocking.
-   - Manual booking by staff.
-   - Settings panel for slot behavior and maintenance actions.
+   - Book for Patient by staff.
+   - Control Panel for slot behavior, user management, and maintenance actions.
 
 Pages + Routing
 ---------------
@@ -54,18 +57,26 @@ Booking Behavior Rules
 - Blocked date ranges disable booking.
 - Blocked sessions disable booking.
 - Approved appointment consumes slot for that date/time.
+- Weekly off / fully blocked day should use centered yellow overlay over blurred disabled slots.
+- After successful booking request, keep customer on selected booking date and show centered success modal.
 
 Appointment Lifecycle
 ---------------------
 - Pending -> Approved / Rejected -> Completed / No-show
 - Approved can be unblocked with mandatory reason.
 - On approve/reject: temporary WhatsApp redirect message flow.
+- Notes/status trail should reflect actor role:
+  - Booked by staff
+  - Approved by dentist
+  - Rejected by staff
+  - Unblocked by dentist: <reason>
 
 WhatsApp behavior (current)
 ---------------------------
 - No direct API dependency required for now.
 - Open prefilled wa.me URL on status changes/manual booking.
 - Keep structure ready to plug Twilio API later.
+- Use guarded confirmation workflow: state changes only finalize after user clicks `Message Sent`.
 
 Admin Settings Requirements
 ---------------------------
@@ -79,6 +90,20 @@ Admin Settings Requirements
   - confirmation prompt
   - admin password confirmation required
   - run via secure Netlify Function using service role key
+- Rename visible settings surface to `Control Panel`
+- Staff must not see high-privilege maintenance actions like `Reset Past Data`
+
+User Management Requirements
+----------------------------
+- Dentist can create dashboard users from Control Panel without opening Supabase.
+- Show current access users:
+  - total count
+  - full name
+  - email
+  - role
+- Add-user flow must run through secure backend endpoint.
+- Add-user flow must require fresh TOTP confirmation before creation.
+- Use server-side key only on backend function, never in browser.
 
 Emergency Blocking UX
 ---------------------
@@ -86,6 +111,8 @@ Emergency Blocking UX
 - Use dedicated modal picker with clickable slot chips.
 - Controls: Select All, Clear, Apply, Cancel.
 - Save selected sessions in one operation.
+- If blocking conflicts with approved appointment(s), warn first.
+- If proceeding anyway, notify affected patient(s) through guarded WhatsApp flow and only then finalize cancellation + block.
 
 Realtime Dentist Notification
 -----------------------------
@@ -104,7 +131,8 @@ Analytics (industry practical set)
 Security + Compliance Decisions
 -------------------------------
 - Dentist/staff auth through Supabase email+password.
-- Password reset handled from login page flow.
+- Password reset handled from login page flow with clear recovery UI.
+- TOTP MFA required for admin access.
 - RLS enforced for admin data actions.
 - Secrets only in Netlify env vars; never frontend.
 
@@ -122,6 +150,10 @@ Admin Authorization Model
 -------------------------
 - User must exist in auth.users.
 - User must be present in public.admin_profiles with role (dentist/staff).
+- Existing schema fields reused for audit-style UI:
+  - `appointments.status_note`
+  - `appointments.approved_by`
+  - `appointment_status_history.changed_by`
 
 Design + Responsive Expectations
 --------------------------------
@@ -130,12 +162,38 @@ Design + Responsive Expectations
 - Mobile booking slots should be compact grid.
 - Admin timeline should be compact on mobile.
 - Keep clean, non-cluttered UI.
+- On mobile admin:
+  - Day Snapshot open by default
+  - other collapsible sections collapsed by default
+
+Control Panel / Collapse UX
+---------------------------
+- Use chevron up/down toggle buttons instead of text `Collapse/Expand` where practical.
+- Apply same collapse pattern across dashboard sections and Manage Users subsection.
+- Control Panel modal itself must scroll internally on all devices.
 
 Deployment Model
 ----------------
 - Host on Netlify.
 - Supabase as backend.
 - Works both in production and local development.
+- Keep backend contract portable so equivalent API routes can be reimplemented on Vercel/Hostinger/GoDaddy with backend support.
+
+Backend Endpoints Required
+--------------------------
+- /api/admin-create-user
+- /api/admin-list-users
+- /api/reset-past-data
+
+Environment Variables
+---------------------
+Frontend/runtime:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+
+Server-side:
+- SUPABASE_SERVER_KEY (preferred)
+- SUPABASE_SERVICE_ROLE_KEY (legacy fallback only)
 
 Local Dev Commands
 ------------------
@@ -150,11 +208,16 @@ Operational Checklist Before Demo
 4. Weekly holiday conflict prevention works.
 5. Realtime alert + sound works.
 6. Emergency bulk blocking works.
-7. Mobile layout sanity check done.
-8. Password reset flow works.
+7. Dentist/staff role login works.
+8. Add User works from Control Panel.
+9. Current Access Users list loads.
+10. Password reset flow works.
+11. Mobile layout sanity check done.
 
 Git + Handoff Discipline
 -----------------------
 - Keep HANDSOFF.md updated after major behavior changes.
 - Keep MAINTENANCE_BACKUP_GUIDE.txt updated for deploy/ops changes.
+- Keep SUPABASE_MIGRATION_GUIDE.txt updated if auth/admin ownership rules change.
+- Keep HOSTING_DEPLOYMENT_GUIDE.txt updated if serverless/backend hosting rules change.
 - Use this blueprint file as exact spec if rebuilding from scratch.

@@ -19,7 +19,6 @@ const loginForm = document.getElementById("loginForm");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
-const resendConfirmationBtn = document.getElementById("resendConfirmationBtn");
 const confirmLinkForm = document.getElementById("confirmLinkForm");
 const confirmLinkEmail = document.getElementById("confirmLinkEmail");
 const confirmLinkBackBtn = document.getElementById("confirmLinkBackBtn");
@@ -198,9 +197,6 @@ function showLoginView() {
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = false;
   }
-  if (resendConfirmationBtn) {
-    resendConfirmationBtn.hidden = false;
-  }
   if (confirmLinkForm) {
     confirmLinkForm.hidden = true;
   }
@@ -230,9 +226,6 @@ function showConfirmationLinkView() {
   }
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = true;
-  }
-  if (resendConfirmationBtn) {
-    resendConfirmationBtn.hidden = true;
   }
   if (confirmLinkForm) {
     confirmLinkForm.hidden = false;
@@ -266,9 +259,6 @@ function showForgotView() {
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = true;
   }
-  if (resendConfirmationBtn) {
-    resendConfirmationBtn.hidden = true;
-  }
   if (confirmLinkForm) {
     confirmLinkForm.hidden = true;
   }
@@ -300,9 +290,6 @@ function showForgotSentView(email = "") {
   }
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = true;
-  }
-  if (resendConfirmationBtn) {
-    resendConfirmationBtn.hidden = true;
   }
   if (confirmLinkForm) {
     confirmLinkForm.hidden = true;
@@ -339,9 +326,6 @@ function showResetView() {
   }
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = true;
-  }
-  if (resendConfirmationBtn) {
-    resendConfirmationBtn.hidden = true;
   }
   if (confirmLinkForm) {
     confirmLinkForm.hidden = true;
@@ -2469,7 +2453,6 @@ async function init() {
   });
 
   forgotPasswordBtn.addEventListener("click", showForgotView);
-  resendConfirmationBtn?.addEventListener("click", showConfirmationLinkView);
   confirmLinkBackBtn?.addEventListener("click", showLoginView);
   confirmLinkForm?.addEventListener("submit", handleResendConfirmation);
   forgotBackBtn?.addEventListener("click", showLoginView);

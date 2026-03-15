@@ -734,6 +734,209 @@ form {
   margin-top: 0.25rem;
 }
 
+.analytics-hero-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-end;
+  background:
+    radial-gradient(circle at top right, rgba(15, 143, 104, 0.16), transparent 36%),
+    linear-gradient(135deg, #ffffff 0%, #f5fbf8 100%);
+}
+
+.analytics-hero-copy {
+  max-width: 720px;
+}
+
+.analytics-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.analytics-filter-actions {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.analytics-grid-section {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analytics-panel {
+  min-height: 100%;
+}
+
+.analytics-panel--wide {
+  grid-column: span 2;
+}
+
+.analytics-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+  margin-bottom: 0.9rem;
+}
+
+.analytics-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.analytics-stat-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8fcfa;
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.analytics-stat-label {
+  color: #5a6b61;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.analytics-stat-value {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.analytics-stat-sub {
+  color: #5a6b61;
+  font-size: 0.86rem;
+}
+
+.chart-shell {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #f8fcfa;
+}
+
+.analytics-line-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.funnel-list,
+.analytics-bars,
+.analytics-stat-stack,
+.insight-note-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.funnel-item,
+.analytics-mini-stat,
+.insight-note {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fcfa;
+  padding: 0.8rem;
+}
+
+.funnel-head,
+.analytics-bar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.funnel-track,
+.analytics-bar-track,
+.comparison-track {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: #e8f2ec;
+  overflow: hidden;
+}
+
+.funnel-fill,
+.analytics-bar-fill,
+.comparison-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.analytics-bar-item small,
+.funnel-item small,
+.analytics-mini-stat small {
+  color: #5a6b61;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.comparison-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fcfa;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.comparison-bars {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.comparison-bars span {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #375347;
+}
+
+.comparison-fill--visits {
+  background: #9ca3af;
+}
+
+.comparison-fill--bookings {
+  background: #0f8f68;
+}
+
+.analytics-mini-stat span {
+  display: block;
+  color: #5a6b61;
+  font-size: 0.83rem;
+  margin-bottom: 0.2rem;
+}
+
+.analytics-mini-stat strong {
+  display: block;
+  font-size: 1.7rem;
+  margin-bottom: 0.15rem;
+}
+
+.insight-note strong {
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.insight-note p {
+  color: #40564c;
+}
+
 #mfaSecret[readonly] {
   caret-color: transparent;
 }
@@ -1175,7 +1378,8 @@ footer {
   .info-grid,
   .gallery-grid,
   .toolbar,
-  .kpi-grid {
+  .kpi-grid,
+  .analytics-overview-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1237,6 +1441,15 @@ footer {
 
   .timeline-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-grid-section,
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-panel--wide {
+    grid-column: span 1;
   }
 
   .inline-actions {
@@ -1331,7 +1544,8 @@ footer {
     padding: 0.9rem;
   }
 
-  .kpi-grid {
+  .kpi-grid,
+  .analytics-overview-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1405,6 +1619,11 @@ footer {
     padding: 0.85rem;
   }
 
+  .analytics-hero-card,
+  .analytics-toolbar {
+    align-items: stretch;
+  }
+
   .slot-picker-grid {
     grid-template-columns: 1fr;
   }
@@ -1456,7 +1675,8 @@ footer {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .kpi-grid {
+  .kpi-grid,
+  .analytics-overview-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

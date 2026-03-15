@@ -1,0 +1,205 @@
+HOSTING DEPLOYMENT GUIDE
+========================
+
+Purpose
+-------
+Use this guide when deploying Sarvam Dental Clinic to hosting providers such as Netlify, Vercel, Hostinger, or GoDaddy.
+
+Project Type
+------------
+This project is:
+- static frontend (HTML/CSS/Vanilla JS)
+- Supabase backend
+- optional server-side functions for admin-only actions
+
+Important Hosting Rule
+----------------------
+Public pages can work on static hosting.
+But these admin features require server-side execution:
+- Add User
+- List Current Access Users
+- Reset Past Data
+
+So for full functionality, hosting must support server-side functions or API routes.
+
+Required Environment Variables
+------------------------------
+Frontend/runtime:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+
+Server-side / secure admin actions:
+- SUPABASE_SERVER_KEY (preferred)
+- SUPABASE_SERVICE_ROLE_KEY (legacy fallback only)
+
+Optional future env vars:
+- TWILIO_ACCOUNT_SID
+- TWILIO_AUTH_TOKEN
+- TWILIO_WHATSAPP_FROM
+
+Netlify Deployment
+------------------
+Best fit for current project.
+
+Why:
+- project already has `netlify.toml`
+- project already has Netlify Functions in `netlify/functions`
+- `/api/*` redirect already points to Netlify Functions
+
+Required steps:
+1. Connect GitHub repo.
+2. Build/publish root directory (`.`).
+3. Add env vars:
+   - SUPABASE_URL
+   - SUPABASE_ANON_KEY
+   - SUPABASE_SERVER_KEY
+4. Redeploy after saving env vars.
+
+Current production URLs:
+- Main site: https://sarvamdentalclinic.netlify.app/
+- Admin: https://sarvamdentalclinic.netlify.app/doctors-login.html
+
+Vercel Deployment
+-----------------
+Possible, but needs a small adapter.
+
+Why:
+- frontend will work
+- current backend functions are written for Netlify
+- Vercel needs API routes / serverless functions in Vercel format
+
+To migrate to Vercel:
+1. Keep frontend files as-is.
+2. Recreate these endpoints as Vercel functions:
+   - /api/admin-create-user
+   - /api/admin-list-users
+   - /api/reset-past-data
+3. Add same env vars in Vercel.
+4. Deploy and retest admin flows.
+
+Conclusion:
+- Vercel is compatible
+- but backend function files must be adapted
+
+Hostinger Deployment
+--------------------
+Possible only if you choose a plan that supports backend execution.
+
+Important:
+- if Hostinger plan is static-only, public website will work but secure admin server actions will not
+- if plan supports Node.js/backend routes, then secure admin functions can be hosted there
+
+To use Hostinger safely:
+1. Confirm hosting plan supports backend execution.
+2. Create backend endpoints equivalent to:
+   - /api/admin-create-user
+   - /api/admin-list-users
+   - /api/reset-past-data
+3. Add env vars securely in Hostinger panel.
+4. Keep server key only on backend.
+
+Conclusion:
+- static-only Hostinger = public site only
+- backend-enabled Hostinger = full app possible
+
+GoDaddy Deployment
+------------------
+Same rule as Hostinger.
+
+If GoDaddy hosting is static/basic only:
+- frontend works
+- secure admin functions do not
+
+If GoDaddy hosting supports Node/server execution:
+- recreate backend endpoints there
+- add secure env vars
+- deploy and retest
+
+Conclusion:
+- compatibility depends on backend support
+
+Safest Recommendation
+---------------------
+For this exact project, best hosting options are:
+1. Netlify
+2. Vercel (with function adapter)
+
+Why:
+- easiest for current architecture
+- easiest env var management
+- easiest serverless support
+
+What Works On Static Hosting Only
+---------------------------------
+If hosted as static-only without backend functions:
+- landing page
+- services
+- gallery
+- booking form UI
+- Supabase public booking insert flow
+- admin login UI
+- admin dashboard reads/writes through Supabase browser client
+
+What Will Break Without Backend
+-------------------------------
+These require secure backend key and will not work safely on static-only hosting:
+- Manage Users -> Add User
+- Manage Users -> Current Access Users
+- Reset Past Data
+
+Portable Backend Contract
+-------------------------
+The frontend expects these API routes:
+- /api/admin-create-user
+- /api/admin-list-users
+- /api/reset-past-data
+
+If you move away from Netlify, preserve those paths.
+Then the frontend does not need major changes.
+
+Pre-Deployment Checklist
+------------------------
+Before deploying anywhere:
+1. Verify Supabase project is correct.
+2. Verify env vars are correct.
+3. Verify admin user exists in `admin_profiles`.
+4. Verify dentist TOTP works.
+5. Verify mobile and desktop both load correctly.
+
+Post-Deployment Smoke Test
+--------------------------
+Test all of these:
+- customer booking request
+- weekly off display
+- blocked day/session display
+- dentist login
+- staff login
+- authenticator setup / verify
+- forgot password
+- approve / reject
+- unblock
+- Book for Patient
+- Control Panel save
+- Manage Users
+- Current Access Users
+- Reset Past Data (dentist only)
+
+Recommended Deployment Strategy For Client Work
+-----------------------------------------------
+If speed and reliability matter most:
+- keep production on Netlify
+- keep Supabase as backend
+- use GitHub as source of truth
+
+If dentist later wants own hosting:
+- first confirm whether their preferred host supports server-side functions
+- if not, keep app on Netlify or Vercel
+- or split architecture: frontend on their host, secure admin API on serverless platform
+
+Files To Keep Safe
+------------------
+- netlify.toml
+- supabase/schema.sql
+- HANDSOFF.md
+- MAINTENANCE_BACKUP_GUIDE.txt
+- this file: HOSTING_DEPLOYMENT_GUIDE.txt
