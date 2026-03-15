@@ -20,6 +20,7 @@ const selectedSlotInput = document.getElementById("selectedSlot");
 const selectedSlotText = document.getElementById("selectedSlotText");
 const blockedNotice = document.getElementById("blockedNotice");
 const slotStateWrap = document.getElementById("slotStateWrap");
+const adminReturnLink = document.getElementById("adminReturnLink");
 const statusEl = document.getElementById("status");
 const yearEl = document.getElementById("year");
 const showMapBtn = document.getElementById("showMapBtn");
@@ -269,6 +270,42 @@ async function loadClinicSettings() {
       booking_window_days: 10,
       weekly_off_days: []
     };
+  }
+}
+
+async function updateAdminReturnLink() {
+  if (!adminReturnLink) {
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      throw error;
+    }
+
+    const userId = data?.session?.user?.id;
+    if (!userId) {
+      adminReturnLink.hidden = true;
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("admin_profiles")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (profileError || !profile?.role) {
+      adminReturnLink.hidden = true;
+      return;
+    }
+
+    adminReturnLink.hidden = false;
+    adminReturnLink.textContent = "Back to Dashboard";
+  } catch (error) {
+    console.error("Unable to verify dashboard access:", error);
+    adminReturnLink.hidden = true;
   }
 }
 
@@ -562,6 +599,10 @@ function setupMobileSectionNav() {
 }
 
 async function wire() {
+  await updateAdminReturnLink();
+  supabase.auth.onAuthStateChange(() => {
+    updateAdminReturnLink();
+  });
   loadServices();
   initDate();
   await loadClinicSettings();
