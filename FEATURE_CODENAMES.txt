@@ -1,0 +1,82 @@
+SARVAM DENTAL CLINIC - FEATURE CODENAMES
+=======================================
+
+1) WASafeConfirm
+Meaning:
+- WhatsApp-dependent workflow where system state must change only after user confirms "Message Sent".
+
+Used for:
+- approve / reject with notify
+- manual booking notify
+- conflict-driven patient cancellation before blocking
+- customer requested cancellation during unblock
+
+
+2) SlotGuard
+Meaning:
+- protection against slot conflicts before allowing booking or slot-changing actions.
+
+Used for:
+- checking already booked / approved slots
+- preventing manual booking on consumed slots
+- guarding against hidden double-booking
+
+
+3) BlockConflict
+Meaning:
+- emergency session blocking flow when approved appointments already exist in the selected slot(s).
+
+Used for:
+- warning popup with affected patients
+- proceed-anyway logic
+- patient cancellation + notification before final block
+
+
+4) DayOverlay
+Meaning:
+- centered yellow overlay card shown over blurred slot/snapshot grid when a full day is unavailable.
+
+Used for:
+- customer weekly off display
+- customer blocked day display
+- admin day snapshot weekly off / blocked day display
+
+
+5) UnblockReasonFlow
+Meaning:
+- fixed unblock reason selection instead of free text, with behavior depending on reason.
+
+Used for:
+- Customer didnt showup
+- Customer requested cancellation
+
+
+6) LiveDeskAlert
+Meaning:
+- realtime admin alert with sound when a new booking arrives while dashboard is open.
+
+Used for:
+- bottom-left popup
+- sound alert
+- live dashboard refresh
+
+
+7) BookingWindowControl
+Meaning:
+- clinic settings logic controlling booking visibility and slot rules.
+
+Used for:
+- next N days visibility
+- weekly off days
+- slot duration effective date
+
+
+How to quote these in future conversations
+------------------------------------------
+- "Use WASafeConfirm here"
+- "Apply SlotGuard on this action"
+- "This needs BlockConflict"
+- "Show DayOverlay"
+- "Extend UnblockReasonFlow"
+- "Trigger LiveDeskAlert"
+- "Change BookingWindowControl"

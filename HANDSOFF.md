@@ -74,14 +74,17 @@ Auth model:
 - Weekly off save is blocked if conflicting Pending/Approved appointments exist.
 - Holiday range blocking and emergency session blocking supported.
 - Approved future appointments can be Unblocked with mandatory reason.
-- Staff manual booking exists and opens WhatsApp notification draft.
+- Staff can book for patient from admin.
+- Manual booking, approve/reject, and conflict-driven cancellation can use guarded WhatsApp confirmation before finalizing state changes.
 
 ## Dashboard UX Notes
 - Top controls: Refresh, Settings, Logout.
-- Timeline is compact and collapsible.
+- Day Snapshot is compact and collapsible.
+- Appointments section is also collapsible and default-open.
 - Emergency session blocking uses a dedicated picker modal for reliable desktop/tablet/mobile behavior.
 - Toast feedback for major actions.
 - Live booking alerts appear at bottom-left with notification tone.
+- Admin conflict/warning flows use centered in-app modals where implemented.
 
 ## Mobile-Specific Decisions
 - Mobile has section-based navigation behavior for Home/Services/Book.
@@ -118,6 +121,38 @@ Local URLs:
 - Netlify connected to GitHub `main`.
 - Publish directory: repository root (`.`).
 - `netlify.toml` is configured.
+
+## Today's Improvements
+- Customer booking success now preserves the selected date after submission.
+- Customer booking success uses a centered modal with `OK` instead of inline success text.
+- Customer weekly off / blocked day state uses centered yellow overlay over blurred disabled slots.
+- Admin `Day Timeline View` was renamed to `Day Snapshot`.
+- Admin Day Snapshot now shows yellow overlay state for weekly off / blocked day.
+- Admin default appointment filter range is now `today -> today + booking visibility days`.
+- Approve/Reject modal includes compact `Notify via WhatsApp` checkbox enabled by default.
+- `WASafeConfirm` flow added so WhatsApp-related actions finalize only after `Message Sent`.
+- Manual booking now also uses `WASafeConfirm`.
+- Session blocking with approved appointment conflict now warns first and supports proceed-anyway path with patient notification.
+- Unblock now uses fixed reason options instead of free text.
+- `Customer requested cancellation` unblock path requires WhatsApp confirmation before finalizing.
+- Manual booking conflict warnings use centered popup modal instead of browser alerts.
+- Manual booking conflict text now reflects the actual cause and shows block reason where available.
+
+## Shared Vocabulary
+- `WASafeConfirm`
+  - guarded WhatsApp workflow where the system changes state only after user confirms `Message Sent`
+- `SlotGuard`
+  - slot conflict protection before booking or slot-changing actions
+- `BlockConflict`
+  - emergency block conflict flow for already approved appointments
+- `DayOverlay`
+  - centered yellow overlay over blurred slot/snapshot grids for full-day unavailable state
+- `UnblockReasonFlow`
+  - fixed unblock-reason flow with conditional WhatsApp handling
+- `LiveDeskAlert`
+  - realtime dashboard alert with sound for new bookings
+- `BookingWindowControl`
+  - booking visibility + weekly off + slot duration settings logic
 
 ## Continuity / Recovery
 If moving to new IDE or after context loss:

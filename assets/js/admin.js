@@ -28,6 +28,8 @@ const liveAlertRoot = document.getElementById("liveAlertRoot");
 const dashboard = document.getElementById("dashboard");
 const refreshDashboardBtn = document.getElementById("refreshDashboardBtn");
 const tableBody = document.getElementById("appointmentsBody");
+const appointmentsContent = document.getElementById("appointmentsContent");
+const toggleAppointmentsBtn = document.getElementById("toggleAppointmentsBtn");
 const statusFilter = document.getElementById("statusFilter");
 const fromDate = document.getElementById("fromDate");
 const toDate = document.getElementById("toDate");
@@ -59,6 +61,10 @@ const manualDate = document.getElementById("manualDate");
 const manualSlot = document.getElementById("manualSlot");
 const manualService = document.getElementById("manualService");
 const manualNotes = document.getElementById("manualNotes");
+const emergencyBlockContent = document.getElementById("emergencyBlockContent");
+const toggleEmergencyBlockBtn = document.getElementById("toggleEmergencyBlockBtn");
+const leaveBlockContent = document.getElementById("leaveBlockContent");
+const toggleLeaveBlockBtn = document.getElementById("toggleLeaveBlockBtn");
 
 const kpiVisits = document.getElementById("kpiVisits");
 const kpiBookings = document.getElementById("kpiBookings");
@@ -74,10 +80,25 @@ const timelineSummary = document.getElementById("timelineSummary");
 const timelineBody = document.getElementById("timelineBody");
 const confirmModal = document.getElementById("confirmModal");
 const confirmMessage = document.getElementById("confirmMessage");
+const confirmWhatsappWrap = document.getElementById("confirmWhatsappWrap");
+const confirmWhatsappNotify = document.getElementById("confirmWhatsappNotify");
 const confirmReasonWrap = document.getElementById("confirmReasonWrap");
 const confirmReason = document.getElementById("confirmReason");
 const confirmCancel = document.getElementById("confirmCancel");
 const confirmOk = document.getElementById("confirmOk");
+const whatsappConfirmModal = document.getElementById("whatsappConfirmModal");
+const whatsappConfirmMessage = document.getElementById("whatsappConfirmMessage");
+const whatsappConfirmCancel = document.getElementById("whatsappConfirmCancel");
+const whatsappConfirmOpen = document.getElementById("whatsappConfirmOpen");
+const whatsappConfirmSent = document.getElementById("whatsappConfirmSent");
+const blockConflictModal = document.getElementById("blockConflictModal");
+const blockConflictMessage = document.getElementById("blockConflictMessage");
+const blockConflictList = document.getElementById("blockConflictList");
+const blockConflictCancel = document.getElementById("blockConflictCancel");
+const blockConflictProceed = document.getElementById("blockConflictProceed");
+const noticeModal = document.getElementById("noticeModal");
+const noticeMessage = document.getElementById("noticeMessage");
+const noticeOk = document.getElementById("noticeOk");
 const openSettingsBtn = document.getElementById("openSettingsBtn");
 const settingsModal = document.getElementById("settingsModal");
 const settingsForm = document.getElementById("settingsForm");
@@ -91,6 +112,8 @@ const purgePassword = document.getElementById("purgePassword");
 const purgeDataBtn = document.getElementById("purgeDataBtn");
 
 let pendingStatusAction = null;
+let pendingWhatsappAction = null;
+let pendingBlockConflictAction = null;
 let forgotCooldownTimer = null;
 let clinicSettings = null;
 let slotPickerDraftSelection = new Set();
@@ -575,6 +598,8 @@ function openConfirmModal(appointment, status) {
   confirmMessage.textContent = isUnblock
     ? `Unblock approved appointment for ${appointment.patient_name}?`
     : `Change appointment for ${appointment.patient_name} to ${status}?`;
+  confirmWhatsappWrap.hidden = isUnblock;
+  confirmWhatsappNotify.checked = true;
   confirmReasonWrap.hidden = !isUnblock;
   confirmReason.value = "";
   confirmOk.textContent = isUnblock ? "Unblock" : "Confirm";
@@ -584,9 +609,84 @@ function openConfirmModal(appointment, status) {
 function closeConfirmModal() {
   pendingStatusAction = null;
   confirmReason.value = "";
+  confirmWhatsappWrap.hidden = false;
+  confirmWhatsappNotify.checked = true;
   confirmReasonWrap.hidden = true;
   confirmOk.textContent = "Confirm";
   confirmModal.hidden = true;
+}
+
+function openWhatsappConfirmModal(payload) {
+  pendingWhatsappAction = payload;
+  if (whatsappConfirmMessage) {
+    if (payload.type === "block-conflict") {
+      const count = payload.conflicts?.length || 0;
+      whatsappConfirmMessage.textContent = `Send the WhatsApp message${count === 1 ? "" : "s"} to the affected patient${count === 1 ? "" : "s"}, then click "Message Sent". The session block will be applied only after confirmation.`;
+    } else if (payload.type === "manual-booking") {
+      whatsappConfirmMessage.textContent = `Open WhatsApp for ${payload.appointment.patient_name}, send the confirmation message, then click "Message Sent". Manual booking will be finalized only after confirmation.`;
+    } else if (payload.status === "Rejected" && payload.reason === "customer requested cancellation") {
+      whatsappConfirmMessage.textContent = `Open WhatsApp for ${payload.appointment.patient_name}, send the cancellation message, then click "Message Sent". The appointment will be unblocked only after confirmation.`;
+    } else {
+      whatsappConfirmMessage.textContent = `Send the WhatsApp message for ${payload.appointment.patient_name}, then click "Message Sent". Status will update only after confirmation.`;
+    }
+  }
+  whatsappConfirmModal.hidden = false;
+}
+
+function closeWhatsappConfirmModal() {
+  pendingWhatsappAction = null;
+  whatsappConfirmModal.hidden = true;
+}
+
+function openPendingWhatsappAction(action) {
+  if (!action) {
+    return;
+  }
+  if (action.type === "block-conflict") {
+    action.conflicts.forEach((appointment) => {
+      openWhatsappForClinicBlock(appointment, action.reason);
+    });
+    return;
+  }
+  openWhatsappForStatus(action.appointment, action.status, action.reason || "");
+}
+
+function openBlockConflictModal(action) {
+  pendingBlockConflictAction = action;
+  const count = action.conflicts.length;
+  if (blockConflictMessage) {
+    blockConflictMessage.textContent = `There ${count === 1 ? "is" : "are"} ${count} approved appointment${count === 1 ? "" : "s"} in the selected blocked session${count === 1 ? "" : "s"}. Proceeding will cancel ${count === 1 ? "that appointment" : "those appointments"} and notify patients on WhatsApp with the doctor's reason.`;
+  }
+  if (blockConflictList) {
+    blockConflictList.innerHTML = "";
+    action.conflicts.forEach((appointment) => {
+      const item = document.createElement("div");
+      item.className = "conflict-item";
+      item.innerHTML = `<strong>${appointment.patient_name}</strong><small>${appointment.preferred_date} • ${appointment.preferred_slot} • ${appointment.service}</small>`;
+      blockConflictList.appendChild(item);
+    });
+  }
+  blockConflictModal.hidden = false;
+}
+
+function closeBlockConflictModal() {
+  pendingBlockConflictAction = null;
+  if (blockConflictList) {
+    blockConflictList.innerHTML = "";
+  }
+  blockConflictModal.hidden = true;
+}
+
+function openNoticeModal(message) {
+  if (noticeMessage) {
+    noticeMessage.textContent = message;
+  }
+  noticeModal.hidden = false;
+  noticeOk?.focus();
+}
+
+function closeNoticeModal() {
+  noticeModal.hidden = true;
 }
 
 function openSettingsModal() {
@@ -636,6 +736,14 @@ function weekdayNameFromYmd(dateYmd) {
     return "";
   }
   return weekdayNames[date.getDay()] || "";
+}
+
+function isWeeklyOffDate(dateYmd) {
+  const weeklyOffDays = Array.isArray(clinicSettings?.weekly_off_days) ? clinicSettings.weekly_off_days : [];
+  if (!weeklyOffDays.length) {
+    return false;
+  }
+  return weeklyOffDays.includes(weekdayNameFromYmd(dateYmd));
 }
 
 async function findWeeklyOffConflicts(weeklyOffDays, fromDateYmd) {
@@ -815,7 +923,7 @@ function normalizeWhatsappPhone(rawPhone) {
   return digits;
 }
 
-function openWhatsappForStatus(appointment, status) {
+function openWhatsappForStatus(appointment, status, reasonOverride = "") {
   const phone = normalizeWhatsappPhone(appointment.patient_phone);
   if (!phone) {
     setStatus(appStatus, "Status updated, but patient phone is invalid for WhatsApp.", "warn");
@@ -823,6 +931,7 @@ function openWhatsappForStatus(appointment, status) {
   }
 
   const isApproved = status === "Approved";
+  const isCancellation = status === "Rejected" && reasonOverride === "customer requested cancellation";
   const message = isApproved
     ? [
       `Hi ${appointment.patient_name},`,
@@ -833,6 +942,16 @@ function openWhatsappForStatus(appointment, status) {
       "Please arrive 10 minutes early.",
       "Sarvam Dental Clinic"
     ].join("\n")
+    : isCancellation
+      ? [
+        `Hi ${appointment.patient_name},`,
+        "Your appointment has been cancelled as requested.",
+        `Date: ${appointment.preferred_date}`,
+        `Slot: ${appointment.preferred_slot}`,
+        `Service: ${appointment.service}`,
+        "Please contact Sarvam Dental Clinic if you would like to reschedule.",
+        "Sarvam Dental Clinic"
+      ].join("\n")
     : [
       `Hi ${appointment.patient_name},`,
       "Your appointment request could not be confirmed for the selected slot.",
@@ -846,12 +965,34 @@ function openWhatsappForStatus(appointment, status) {
   window.open(whatsappUrl, "_blank", "noopener");
 }
 
-async function updateStatus(appointment, status, reasonOverride = "") {
+function openWhatsappForClinicBlock(appointment, reason) {
+  const phone = normalizeWhatsappPhone(appointment.patient_phone);
+  if (!phone) {
+    setStatus(appStatus, "Appointment cancelled, but patient phone is invalid for WhatsApp.", "warn");
+    return;
+  }
+
+  const message = [
+    `Hi ${appointment.patient_name},`,
+    "Your confirmed appointment needs to be cancelled by the clinic.",
+    `Date: ${appointment.preferred_date}`,
+    `Slot: ${appointment.preferred_slot}`,
+    `Service: ${appointment.service}`,
+    `Reason: ${reason}`,
+    "Please contact Sarvam Dental Clinic to reschedule.",
+    "Sarvam Dental Clinic"
+  ].join("\n");
+
+  const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  window.open(whatsappUrl, "_blank", "noopener");
+}
+
+async function updateStatus(appointment, status, reasonOverride = "", notifyWhatsapp = true) {
   const uid = await currentUserId();
   const isUnblock = status === "Unblock";
   const finalStatus = isUnblock ? "Rejected" : status;
   const unblockReason = isUnblock ? reasonOverride : "";
-  const shouldNotifyWhatsapp = !isUnblock && (finalStatus === "Approved" || finalStatus === "Rejected");
+  const shouldNotifyWhatsapp = !isUnblock && notifyWhatsapp && (finalStatus === "Approved" || finalStatus === "Rejected");
   const whatsappSentAt = shouldNotifyWhatsapp ? new Date().toISOString() : null;
 
   const patch = {
@@ -869,19 +1010,15 @@ async function updateStatus(appointment, status, reasonOverride = "") {
     return;
   }
 
-  if (shouldNotifyWhatsapp && !isUnblock) {
-    openWhatsappForStatus(appointment, finalStatus);
-  }
-
   setStatus(appStatus, isUnblock ? "Appointment unblocked with reason." : `Appointment marked as ${finalStatus}.`, "ok");
   showToast(isUnblock ? "Appointment unblocked." : `Appointment ${finalStatus.toLowerCase()}.`, "success");
   await loadDashboard();
 }
 
-async function isDateBlocked(dateYmd) {
+async function getDateBlockedInfo(dateYmd) {
   const { data, error } = await supabase
     .from("blocked_dates")
-    .select("id")
+    .select("id, reason")
     .lte("from_date", dateYmd)
     .gte("to_date", dateYmd)
     .limit(1)
@@ -890,13 +1027,13 @@ async function isDateBlocked(dateYmd) {
   if (error) {
     throw new Error(error.message);
   }
-  return !!data;
+  return data || null;
 }
 
-async function isSlotBlocked(dateYmd, slotLabel) {
+async function getSlotBlockedInfo(dateYmd, slotLabel) {
   const { data, error } = await supabase
     .from("blocked_slots")
-    .select("id")
+    .select("id, reason")
     .eq("block_date", dateYmd)
     .eq("slot_label", slotLabel)
     .limit(1)
@@ -905,7 +1042,7 @@ async function isSlotBlocked(dateYmd, slotLabel) {
   if (error) {
     throw new Error(error.message);
   }
-  return !!data;
+  return data || null;
 }
 
 async function isSlotAlreadyApproved(dateYmd, slotLabel) {
@@ -922,6 +1059,60 @@ async function isSlotAlreadyApproved(dateYmd, slotLabel) {
     throw new Error(error.message);
   }
   return !!data;
+}
+
+async function getApprovedAppointmentsForSlots(dateYmd, slotLabels) {
+  if (!dateYmd || !Array.isArray(slotLabels) || slotLabels.length === 0) {
+    return [];
+  }
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("id, patient_name, patient_phone, preferred_date, preferred_slot, service, status, notes, status_note")
+    .eq("preferred_date", dateYmd)
+    .eq("status", "Approved")
+    .in("preferred_slot", slotLabels)
+    .order("preferred_slot", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data || [];
+}
+
+async function applySessionBlocks(blockDate, selectedSlots, reason, uid) {
+  const rows = selectedSlots.map((slot) => ({
+    block_date: blockDate,
+    slot_label: slot,
+    reason: reason || null,
+    created_by: uid
+  }));
+
+  const { error } = await supabase
+    .from("blocked_slots")
+    .upsert(rows, { onConflict: "block_date,slot_label", ignoreDuplicates: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function cancelAppointmentsForBlockedSessions(conflicts, reason, uid) {
+  for (const appointment of conflicts) {
+    const { error } = await supabase
+      .from("appointments")
+      .update({
+        status: "Rejected",
+        status_note: `Cancelled by clinic during session block: ${reason}`,
+        approved_at: null,
+        approved_by: null,
+        whatsapp_sent_at: new Date().toISOString()
+      })
+      .eq("id", appointment.id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
 }
 
 function makeCell(text) {
@@ -1039,6 +1230,30 @@ function setTimelineCollapsed(collapsed) {
   toggleTimelineBtn.textContent = collapsed ? "Expand" : "Collapse";
 }
 
+function setAppointmentsCollapsed(collapsed) {
+  if (!appointmentsContent || !toggleAppointmentsBtn) {
+    return;
+  }
+  appointmentsContent.hidden = collapsed;
+  toggleAppointmentsBtn.textContent = collapsed ? "Expand" : "Collapse";
+}
+
+function setEmergencyBlockCollapsed(collapsed) {
+  if (!emergencyBlockContent || !toggleEmergencyBlockBtn) {
+    return;
+  }
+  emergencyBlockContent.hidden = collapsed;
+  toggleEmergencyBlockBtn.textContent = collapsed ? "Expand" : "Collapse";
+}
+
+function setLeaveBlockCollapsed(collapsed) {
+  if (!leaveBlockContent || !toggleLeaveBlockBtn) {
+    return;
+  }
+  leaveBlockContent.hidden = collapsed;
+  toggleLeaveBlockBtn.textContent = collapsed ? "Expand" : "Collapse";
+}
+
 async function loadTimeline() {
   if (!timelineDate || !timelineBody || !timelineSummary) {
     return;
@@ -1048,6 +1263,7 @@ async function loadTimeline() {
   const duration = getSlotDurationForDate(selectedDate);
   const daySlots = buildSlots(duration);
   timelineBody.innerHTML = "";
+  timelineBody.classList.remove("overlay-active");
   timelineSummary.textContent = "Loading timeline...";
 
   const [appointmentsResult, blockedDateResult, blockedSlotsResult] = await Promise.all([
@@ -1084,6 +1300,7 @@ async function loadTimeline() {
 
   const appointments = appointmentsResult.data || [];
   const blockedDate = blockedDateResult.data || null;
+  const weeklyOff = isWeeklyOffDate(selectedDate);
   const blockedSlots = blockedSlotsResult.data || [];
   const bySlot = new Map();
   appointments.forEach((item) => {
@@ -1101,6 +1318,8 @@ async function loadTimeline() {
   if (blockedDate) {
     const reason = blockedDate.reason ? ` Reason: ${blockedDate.reason}` : "";
     timelineSummary.textContent = `${selectedDate} is blocked for bookings.${reason}`;
+  } else if (weeklyOff) {
+    timelineSummary.textContent = `${selectedDate} is a weekly off day.`;
   } else {
     timelineSummary.textContent = `${selectedDate}: ${appointments.length} booking(s), ${pendingCount} pending, ${approvedCount} approved, ${blockedCount} blocked session(s).`;
   }
@@ -1116,10 +1335,12 @@ async function loadTimeline() {
     const slot = document.createElement("div");
     slot.className = "timeline-slot";
 
-    if (blockedDate) {
+    if (blockedDate || weeklyOff) {
       const blocked = document.createElement("div");
       blocked.className = "timeline-item rejected";
-      blocked.innerHTML = `<div class="timeline-title">Day blocked</div><div class="timeline-sub">${blockedDate.reason || "Clinic holiday / leave"}</div>`;
+      const blockedLabel = blockedDate ? "Day blocked" : "Weekly off";
+      const blockedReason = blockedDate?.reason || (weeklyOff ? "Clinic is closed for this day." : "Clinic holiday / leave");
+      blocked.innerHTML = `<div class="timeline-title">${blockedLabel}</div><div class="timeline-sub">${blockedReason}</div>`;
       slot.appendChild(blocked);
     } else if (blockedSlotMap.has(slotLabel)) {
       const blocked = document.createElement("div");
@@ -1175,6 +1396,17 @@ async function loadTimeline() {
     row.append(time, slot);
     timelineBody.appendChild(row);
   });
+
+  if (blockedDate || weeklyOff) {
+    timelineBody.classList.add("overlay-active");
+    const notice = document.createElement("div");
+    notice.className = "timeline-day-notice";
+    const reason = blockedDate?.reason ? ` Reason: ${blockedDate.reason}` : "";
+    notice.textContent = blockedDate
+      ? `Clinic is unavailable for this day.${reason}`
+      : "Clinic is closed on this day (weekly off).";
+    timelineBody.appendChild(notice);
+  }
 }
 
 async function loadDashboard() {
@@ -1220,11 +1452,11 @@ async function loadDashboard() {
 }
 
 function setDefaultDateRange() {
-  const now = new Date();
-  const end = now.toISOString().slice(0, 10);
-  const startDate = new Date(now);
-  startDate.setDate(now.getDate() - 30);
-  const start = startDate.toISOString().slice(0, 10);
+  const start = todayYmdInKolkata();
+  const windowDays = Number(clinicSettings?.booking_window_days || 10);
+  const endDate = new Date(`${start}T00:00:00+05:30`);
+  endDate.setDate(endDate.getDate() + Math.max(1, Math.min(90, windowDays)));
+  const end = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
   fromDate.value = start;
   toDate.value = end;
 }
@@ -1278,7 +1510,29 @@ async function init() {
       setTimelineCollapsed(!currentlyCollapsed);
     });
   }
+  const mobileAdminQuery = window.matchMedia("(max-width: 620px)");
   setTimelineCollapsed(false);
+  if (toggleAppointmentsBtn) {
+    toggleAppointmentsBtn.addEventListener("click", () => {
+      const currentlyCollapsed = !appointmentsContent || appointmentsContent.hidden;
+      setAppointmentsCollapsed(!currentlyCollapsed);
+    });
+  }
+  setAppointmentsCollapsed(mobileAdminQuery.matches);
+  if (toggleEmergencyBlockBtn) {
+    toggleEmergencyBlockBtn.addEventListener("click", () => {
+      const currentlyCollapsed = !emergencyBlockContent || emergencyBlockContent.hidden;
+      setEmergencyBlockCollapsed(!currentlyCollapsed);
+    });
+  }
+  setEmergencyBlockCollapsed(mobileAdminQuery.matches);
+  if (toggleLeaveBlockBtn) {
+    toggleLeaveBlockBtn.addEventListener("click", () => {
+      const currentlyCollapsed = !leaveBlockContent || leaveBlockContent.hidden;
+      setLeaveBlockCollapsed(!currentlyCollapsed);
+    });
+  }
+  setLeaveBlockCollapsed(mobileAdminQuery.matches);
 
   slotBlockDate.addEventListener("change", () => {
     fillSlotSelect(slotBlockLabel, slotBlockDate.value || todayYmdInKolkata());
@@ -1329,18 +1583,125 @@ async function init() {
       return;
     }
     const { appointment, status } = pendingStatusAction;
-    const unblockReason = confirmReason.value.trim();
+    const unblockReason = confirmReason.value;
+    const notifyWhatsapp = Boolean(confirmWhatsappNotify?.checked);
     if (status === "Unblock" && !unblockReason) {
-      setStatus(appStatus, "Please enter reason before unblocking.", "warn");
+      setStatus(appStatus, "Please select reason before unblocking.", "warn");
       return;
     }
     closeConfirmModal();
-    await updateStatus(appointment, status, unblockReason);
+    if (status === "Unblock" && unblockReason === "customer requested cancellation") {
+      openWhatsappConfirmModal({
+        type: "status",
+        appointment,
+        status: "Rejected",
+        reason: unblockReason
+      });
+      return;
+    }
+    if (status !== "Unblock" && notifyWhatsapp) {
+      openWhatsappConfirmModal({ type: "status", appointment, status });
+      return;
+    }
+    await updateStatus(appointment, status, unblockReason, notifyWhatsapp);
   });
 
   confirmModal.addEventListener("click", (event) => {
     if (event.target === confirmModal) {
       closeConfirmModal();
+    }
+  });
+
+  whatsappConfirmCancel?.addEventListener("click", () => {
+    closeWhatsappConfirmModal();
+    setStatus(appStatus, "Status not changed. WhatsApp confirmation was cancelled.", "warn");
+    showToast("Status not changed. WhatsApp confirmation cancelled.", "warn");
+  });
+
+  whatsappConfirmOpen?.addEventListener("click", () => {
+    if (!pendingWhatsappAction) {
+      return;
+    }
+    openPendingWhatsappAction(pendingWhatsappAction);
+  });
+
+  whatsappConfirmSent?.addEventListener("click", async () => {
+    if (!pendingWhatsappAction) {
+      closeWhatsappConfirmModal();
+      return;
+    }
+    const action = pendingWhatsappAction;
+    closeWhatsappConfirmModal();
+    if (action.type === "block-conflict") {
+      try {
+        await cancelAppointmentsForBlockedSessions(action.conflicts, action.reason, action.uid);
+        await applySessionBlocks(action.blockDate, action.selectedSlots, action.reason, action.uid);
+        slotBlockForm.reset();
+        fillSlotSelect(slotBlockLabel, action.blockDate || todayYmdInKolkata());
+        slotPickerDraftSelection = new Set();
+        updateSlotPickerSummary();
+        setStatus(appStatus, `${action.selectedSlots.length} session(s) blocked and affected patients marked cancelled.`, "ok");
+        showToast("Session blocked and affected patients updated.", "success");
+        await loadBlockedSlots();
+        await loadDashboard();
+      } catch (error) {
+        setStatus(appStatus, `Unable to complete conflict block: ${error.message}`, "error");
+        showToast("Unable to complete conflict block.", "error");
+      }
+      return;
+    }
+    if (action.type === "manual-booking") {
+      try {
+        const { error } = await supabase
+          .from("appointments")
+          .update({ whatsapp_sent_at: new Date().toISOString() })
+          .eq("id", action.appointment.id);
+        if (error) {
+          throw new Error(error.message);
+        }
+        setStatus(appStatus, "Manual booking created and WhatsApp confirmed.", "ok");
+        showToast("Manual booking finalized.", "success");
+        await loadDashboard();
+      } catch (error) {
+        setStatus(appStatus, `Unable to finalize manual booking: ${error.message}`, "error");
+        showToast("Unable to finalize manual booking.", "error");
+      }
+      return;
+    }
+    await updateStatus(action.appointment, action.status, "", true);
+  });
+
+  whatsappConfirmModal?.addEventListener("click", (event) => {
+    if (event.target === whatsappConfirmModal) {
+      closeWhatsappConfirmModal();
+    }
+  });
+
+  blockConflictCancel?.addEventListener("click", () => {
+    closeBlockConflictModal();
+    setStatus(appStatus, "Session block cancelled.", "warn");
+  });
+
+  blockConflictProceed?.addEventListener("click", async () => {
+    if (!pendingBlockConflictAction) {
+      closeBlockConflictModal();
+      return;
+    }
+    const action = pendingBlockConflictAction;
+    closeBlockConflictModal();
+    openWhatsappConfirmModal({ type: "block-conflict", ...action });
+  });
+
+  blockConflictModal?.addEventListener("click", (event) => {
+    if (event.target === blockConflictModal) {
+      closeBlockConflictModal();
+    }
+  });
+
+  noticeOk?.addEventListener("click", closeNoticeModal);
+  noticeModal?.addEventListener("click", (event) => {
+    if (event.target === noticeModal) {
+      closeNoticeModal();
     }
   });
 
@@ -1441,30 +1802,39 @@ async function init() {
       showToast("Select at least one session slot.", "warn");
       return;
     }
+    const reason = slotBlockReason.value.trim();
 
-    const rows = selectedSlots.map((slot) => ({
-      block_date: slotBlockDate.value,
-      slot_label: slot,
-      reason: slotBlockReason.value.trim() || null,
-      created_by: uid
-    }));
+    try {
+      const conflicts = await getApprovedAppointmentsForSlots(slotBlockDate.value, selectedSlots);
+      if (conflicts.length > 0) {
+        if (!reason) {
+          setStatus(appStatus, "Enter doctor reason before blocking a session with approved appointments.", "warn");
+          showToast("Enter reason before proceeding. It will be sent to affected patients.", "warn");
+          return;
+        }
+        openBlockConflictModal({
+          uid,
+          blockDate: slotBlockDate.value,
+          selectedSlots,
+          reason,
+          conflicts
+        });
+        return;
+      }
 
-    const { error } = await supabase
-      .from("blocked_slots")
-      .upsert(rows, { onConflict: "block_date,slot_label", ignoreDuplicates: true });
-    if (error) {
+      await applySessionBlocks(slotBlockDate.value, selectedSlots, reason, uid);
+      slotBlockForm.reset();
+      fillSlotSelect(slotBlockLabel, slotBlockDate.value || todayYmdInKolkata());
+      slotPickerDraftSelection = new Set();
+      updateSlotPickerSummary();
+      setStatus(appStatus, `${selectedSlots.length} session(s) blocked successfully.`, "ok");
+      showToast(`${selectedSlots.length} session(s) blocked successfully.`, "success");
+      await loadBlockedSlots();
+      await loadDashboard();
+    } catch (error) {
       setStatus(appStatus, `Unable to block session: ${error.message}`, "error");
       showToast("Unable to block session.", "error");
-      return;
     }
-
-    slotBlockForm.reset();
-    fillSlotSelect(slotBlockLabel, slotBlockDate.value || todayYmdInKolkata());
-    slotPickerDraftSelection = new Set();
-    updateSlotPickerSummary();
-    setStatus(appStatus, `${selectedSlots.length} session(s) blocked successfully.`, "ok");
-    showToast(`${selectedSlots.length} session(s) blocked successfully.`, "success");
-    await loadBlockedSlots();
   });
 
   if (slotSelectAllBtn) {
@@ -1503,19 +1873,24 @@ async function init() {
     }
 
     try {
-      const blockedDate = await isDateBlocked(payload.preferred_date);
+      const blockedDate = await getDateBlockedInfo(payload.preferred_date);
       if (blockedDate) {
         setStatus(appStatus, "Cannot book: selected date is blocked.", "warn");
+        const reasonText = blockedDate.reason ? ` Reason: ${blockedDate.reason}` : "";
+        openNoticeModal(`This date is unavailable.${reasonText}`);
         return;
       }
-      const blockedSlot = await isSlotBlocked(payload.preferred_date, payload.preferred_slot);
+      const blockedSlot = await getSlotBlockedInfo(payload.preferred_date, payload.preferred_slot);
       if (blockedSlot) {
         setStatus(appStatus, "Cannot book: selected session is blocked.", "warn");
+        const reasonText = blockedSlot.reason ? ` Reason: ${blockedSlot.reason}` : "";
+        openNoticeModal(`This session is blocked for that slot.${reasonText}`);
         return;
       }
       const slotTaken = await isSlotAlreadyApproved(payload.preferred_date, payload.preferred_slot);
       if (slotTaken) {
         setStatus(appStatus, "Cannot book: selected slot is already approved.", "warn");
+        openNoticeModal("This session is booked for that slot.");
         return;
       }
     } catch (checkError) {
@@ -1528,19 +1903,21 @@ async function init() {
       status: "Approved",
       approved_at: new Date().toISOString(),
       approved_by: uid,
-      whatsapp_sent_at: new Date().toISOString()
+      whatsapp_sent_at: null
     };
 
-    const { error } = await supabase.from("appointments").insert(insertPayload);
-    if (error) {
-      setStatus(appStatus, `Unable to create booking: ${error.message}`, "error");
+    const { data: createdAppointment, error } = await supabase
+      .from("appointments")
+      .insert(insertPayload)
+      .select("id, patient_name, patient_phone, preferred_date, preferred_slot, service, status, notes, status_note, approved_at, approved_by, whatsapp_sent_at")
+      .single();
+    if (error || !createdAppointment) {
+      setStatus(appStatus, `Unable to create booking: ${error?.message || "Insert failed."}`, "error");
       return;
     }
 
-    setStatus(appStatus, "Manual booking created and approved.", "ok");
-    openWhatsappForStatus(insertPayload, "Approved");
+    openWhatsappConfirmModal({ type: "manual-booking", appointment: createdAppointment, status: "Approved" });
     manualBookingForm.reset();
-    await loadDashboard();
   });
 }
 

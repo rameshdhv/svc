@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./assets/css/styles.css?v=20" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=24" />
 </head>
 <body>
   <header>
@@ -94,7 +94,7 @@
 
       <div class="card" style="margin-top: 12px;">
         <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap;">
-          <h3>Day Timeline View</h3>
+          <h3>Day Snapshot</h3>
           <div class="inline-actions">
             <input id="timelineDate" type="date" />
             <button id="refreshTimelineBtn" type="button" class="btn secondary">Refresh</button>
@@ -108,7 +108,13 @@
       </div>
 
       <div class="card" style="margin-top: 12px; overflow-x:auto;">
-        <h3 style="margin-bottom: 10px;">Appointments</h3>
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+          <h3>Appointments</h3>
+          <div class="inline-actions">
+            <button id="toggleAppointmentsBtn" type="button" class="btn secondary">Collapse</button>
+          </div>
+        </div>
+        <div id="appointmentsContent">
         <div class="toolbar" style="margin-bottom: 10px;">
           <select id="statusFilter">
             <option value="">All statuses</option>
@@ -144,10 +150,11 @@
           </thead>
           <tbody id="appointmentsBody"></tbody>
         </table>
+        </div>
       </div>
 
       <div class="card" style="margin-top: 12px;">
-        <h3 style="margin-bottom:10px;">Manual Booking (By Staff)</h3>
+        <h3 style="margin-bottom:10px;">Book for Patient</h3>
         <form id="manualBookingForm">
           <div class="toolbar">
             <input id="manualName" type="text" placeholder="Patient name" required />
@@ -171,7 +178,13 @@
       </div>
 
       <div class="card" style="margin-top: 12px;">
-        <h3 style="margin-bottom:10px;">Emergency Session Blocking</h3>
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+          <h3>Emergency Session Blocking</h3>
+          <div class="inline-actions">
+            <button id="toggleEmergencyBlockBtn" type="button" class="btn secondary">Collapse</button>
+          </div>
+        </div>
+        <div id="emergencyBlockContent">
         <form id="slotBlockForm">
           <div class="toolbar">
             <input id="slotBlockDate" type="date" required />
@@ -196,10 +209,17 @@
             <tbody id="blockedSlotsBody"></tbody>
           </table>
         </div>
+        </div>
       </div>
 
       <div class="card" style="margin-top: 12px;">
-        <h3 style="margin-bottom:10px;">Holiday / Leave Blocking</h3>
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+          <h3>Holiday / Leave Blocking</h3>
+          <div class="inline-actions">
+            <button id="toggleLeaveBlockBtn" type="button" class="btn secondary">Collapse</button>
+          </div>
+        </div>
+        <div id="leaveBlockContent">
         <form id="blockForm">
           <div class="toolbar">
             <input id="blockFromDate" type="date" required />
@@ -222,6 +242,7 @@
             <tbody id="blockedDatesBody"></tbody>
           </table>
         </div>
+        </div>
       </div>
     </section>
   </main>
@@ -230,13 +251,57 @@
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
       <h3 id="confirmTitle">Confirm Status Change</h3>
       <p id="confirmMessage" class="lead" style="margin-top: 6px;"></p>
+      <div id="confirmWhatsappWrap" class="confirm-check-row" style="margin-top: 8px;">
+        <label class="confirm-check-label">
+          <input id="confirmWhatsappNotify" type="checkbox" checked />
+          <span>Notify via WhatsApp</span>
+        </label>
+      </div>
       <div id="confirmReasonWrap" class="field" style="margin-top: 8px;" hidden>
         <label for="confirmReason">Reason (required for unblocking)</label>
-        <textarea id="confirmReason" placeholder="Enter reason for unblocking"></textarea>
+        <select id="confirmReason">
+          <option value="">Select reason</option>
+          <option value="customer didnt showup">Customer didnt showup</option>
+          <option value="customer requested cancellation">Customer requested cancellation</option>
+        </select>
       </div>
       <div class="modal-actions">
         <button type="button" id="confirmCancel" class="btn secondary">Cancel</button>
         <button type="button" id="confirmOk" class="btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="whatsappConfirmModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="whatsappConfirmTitle">
+      <h3 id="whatsappConfirmTitle">Finish WhatsApp Notification</h3>
+      <p id="whatsappConfirmMessage" class="lead" style="margin-top: 6px;">Send the WhatsApp message, then confirm below. Status will update only after confirmation.</p>
+      <div class="modal-actions">
+        <button type="button" id="whatsappConfirmCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="whatsappConfirmOpen" class="btn secondary">Open WhatsApp</button>
+        <button type="button" id="whatsappConfirmSent" class="btn">Message Sent</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="blockConflictModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="blockConflictTitle">
+      <h3 id="blockConflictTitle">Approved Appointment Conflict</h3>
+      <p id="blockConflictMessage" class="lead" style="margin-top: 6px;"></p>
+      <div id="blockConflictList" class="conflict-list"></div>
+      <div class="modal-actions">
+        <button type="button" id="blockConflictCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="blockConflictProceed" class="btn">Proceed Anyway</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="noticeModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="noticeTitle">
+      <h3 id="noticeTitle">Booking Conflict</h3>
+      <p id="noticeMessage" class="lead" style="margin-top: 6px;"></p>
+      <div class="modal-actions">
+        <button type="button" id="noticeOk" class="btn">OK</button>
       </div>
     </div>
   </div>
@@ -312,7 +377,7 @@
 
   <div id="liveAlertRoot" class="toast-stack toast-stack--bottom-left" aria-live="polite" aria-atomic="true"></div>
   <div id="toastRoot" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
-  <script type="module" src="./assets/js/admin.js?v=25"></script>
+  <script type="module" src="./assets/js/admin.js?v=42"></script>
 </body>
 </html>
 

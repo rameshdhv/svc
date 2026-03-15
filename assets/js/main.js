@@ -19,6 +19,7 @@ const slotsEl = document.getElementById("slots");
 const selectedSlotInput = document.getElementById("selectedSlot");
 const selectedSlotText = document.getElementById("selectedSlotText");
 const blockedNotice = document.getElementById("blockedNotice");
+const slotStateWrap = document.getElementById("slotStateWrap");
 const statusEl = document.getElementById("status");
 const yearEl = document.getElementById("year");
 const showMapBtn = document.getElementById("showMapBtn");
@@ -26,6 +27,8 @@ const mapWrap = document.getElementById("mapWrap");
 const locateLink = document.getElementById("locateLink");
 const aboutLink = document.getElementById("aboutLink");
 const toastRoot = document.getElementById("toastRoot");
+const bookingSuccessModal = document.getElementById("bookingSuccessModal");
+const bookingSuccessOk = document.getElementById("bookingSuccessOk");
 const bookSection = document.getElementById("book");
 const mobileBookSwitchBtns = document.querySelectorAll("[data-mobile-book-view]");
 const mobileSectionLinks = document.querySelectorAll("[data-mobile-section]");
@@ -73,6 +76,28 @@ function showToast(message, type = "success") {
   setTimeout(() => {
     toast.remove();
   }, 3200);
+}
+
+function openBookingSuccessModal() {
+  if (!bookingSuccessModal) {
+    return;
+  }
+  bookingSuccessModal.hidden = false;
+  bookingSuccessOk?.focus();
+}
+
+function closeBookingSuccessModal() {
+  if (!bookingSuccessModal) {
+    return;
+  }
+  bookingSuccessModal.hidden = true;
+}
+
+function setBlockedNotice(message = "", options = {}) {
+  const { overlay = false } = options;
+  blockedNotice.textContent = message;
+  blockedNotice.style.display = message ? "block" : "none";
+  slotStateWrap?.classList.toggle("overlay-active", overlay && Boolean(message));
 }
 
 function normalizeDateToYMD(date) {
@@ -254,8 +279,7 @@ async function renderSlots() {
   slotsEl.innerHTML = "";
   selectedSlotInput.value = "";
   selectedSlotText.textContent = "No slot selected";
-  blockedNotice.style.display = "none";
-  blockedNotice.textContent = "";
+  setBlockedNotice("");
 
   if (!selectedDate) {
     return;
@@ -270,8 +294,7 @@ async function renderSlots() {
       button.disabled = true;
       slotsEl.appendChild(button);
     });
-    blockedNotice.textContent = "Clinic is closed on this day (weekly off).";
-    blockedNotice.style.display = "block";
+    setBlockedNotice("Clinic is closed on this day (weekly off).", { overlay: true });
     return;
   }
 
@@ -286,8 +309,7 @@ async function renderSlots() {
       slotsEl.appendChild(button);
     });
     const reason = blockedInfo.reason ? ` Reason: ${blockedInfo.reason}` : "";
-    blockedNotice.textContent = `Clinic is unavailable on this date.${reason}`;
-    blockedNotice.style.display = "block";
+    setBlockedNotice(`Clinic is unavailable on this date.${reason}`, { overlay: true });
     return;
   }
 
@@ -323,11 +345,9 @@ async function renderSlots() {
   });
 
   if (blockedSlots.size > 0) {
-    blockedNotice.textContent = "Some sessions are blocked by clinic for this date.";
-    blockedNotice.style.display = "block";
+    setBlockedNotice("Some sessions are blocked by clinic for this date.");
   } else if (slotsEl.children.length === 0) {
-    blockedNotice.textContent = "No more slots available for today.";
-    blockedNotice.style.display = "block";
+    setBlockedNotice("No more slots available for today.");
   }
 }
 
@@ -381,10 +401,11 @@ async function handleSubmit(event) {
   }
 
   await trackEvent("appointment_submitted", payload.service);
-  setStatus("ok", "Appointment request submitted. Clinic will review and confirm on WhatsApp.");
-  showToast("Appointment request submitted successfully.", "success");
+  setStatus("", "");
+  openBookingSuccessModal();
+  const submittedDate = payload.preferred_date;
   form.reset();
-  dateInput.value = normalizeDateToYMD(new Date());
+  dateInput.value = submittedDate;
   await renderSlots();
 }
 
@@ -501,6 +522,12 @@ async function wire() {
 
   dateInput.addEventListener("change", renderSlots);
   form.addEventListener("submit", handleSubmit);
+  bookingSuccessOk?.addEventListener("click", closeBookingSuccessModal);
+  bookingSuccessModal?.addEventListener("click", (event) => {
+    if (event.target === bookingSuccessModal) {
+      closeBookingSuccessModal();
+    }
+  });
 
   const clinicNameNode = document.getElementById("clinicName");
   const clinicPhoneNode = document.getElementById("clinicPhone");

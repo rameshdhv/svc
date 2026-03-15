@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./assets/css/styles.css?v=20" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=24" />
 </head>
 <body>
   <header>
@@ -169,10 +169,12 @@
 
           <div class="field slot-wrap">
             <label>Available Slots</label>
-            <div id="slots" class="slot-grid" aria-live="polite"></div>
+            <div class="slot-state-wrap" id="slotStateWrap">
+              <div id="slots" class="slot-grid" aria-live="polite"></div>
+              <div id="blockedNotice" class="status warn" style="display:none;" aria-live="polite"></div>
+            </div>
             <input id="selectedSlot" name="selectedSlot" type="hidden" required />
             <small id="selectedSlotText">No slot selected</small>
-            <div id="blockedNotice" class="status warn" style="display:none; margin-top:6px;"></div>
           </div>
 
           <div class="field">
@@ -198,8 +200,18 @@
     </div>
   </footer>
 
+  <div id="bookingSuccessModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bookingSuccessTitle">
+      <h3 id="bookingSuccessTitle">Request Submitted</h3>
+      <p id="bookingSuccessMessage" class="lead" style="margin-top:6px;">Appointment request submitted. Clinic will review and confirm on WhatsApp.</p>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button id="bookingSuccessOk" type="button" class="btn">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toastRoot" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
-  <script type="module" src="./assets/js/main.js?v=14"></script>
+  <script type="module" src="./assets/js/main.js?v=16"></script>
 </body>
 </html>
 
