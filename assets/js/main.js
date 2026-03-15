@@ -473,11 +473,20 @@ function setupMobileSectionNav() {
     });
   }
 
-  function showSection(target) {
+  function getTargetFromHash() {
+    const hash = window.location.hash.replace("#", "");
+    return sections[hash] ? hash : "";
+  }
+
+  function showSection(target, options = {}) {
+    const { updateHash = false } = options;
     Object.entries(sections).forEach(([key, section]) => {
       section.hidden = mobileQuery.matches ? key !== target : false;
     });
     setActiveNav(target);
+    if (mobileQuery.matches && updateHash) {
+      window.history.replaceState({}, "", `#${target}`);
+    }
     if (mobileQuery.matches) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -493,7 +502,8 @@ function setupMobileSectionNav() {
         return;
       }
       event.preventDefault();
-      showSection(target);
+      event.stopPropagation();
+      showSection(target, { updateHash: true });
     });
   });
 
@@ -504,11 +514,18 @@ function setupMobileSectionNav() {
       });
       return;
     }
-    showSection("home");
+    showSection(getTargetFromHash() || "home");
+  });
+
+  window.addEventListener("hashchange", () => {
+    if (!mobileQuery.matches) {
+      return;
+    }
+    showSection(getTargetFromHash() || "home");
   });
 
   if (mobileQuery.matches) {
-    showSection("home");
+    showSection(getTargetFromHash() || "home");
   }
 }
 
