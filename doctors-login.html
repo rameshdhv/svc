@@ -414,7 +414,18 @@
 
   <div id="settingsModal" class="modal-backdrop" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <h3 id="settingsTitle">Control Panel</h3>
+      <div class="modal-header">
+        <h3 id="settingsTitle">Control Panel</h3>
+        <button
+          id="settingsCloseBtn"
+          type="button"
+          class="icon-btn modal-close-btn"
+          aria-label="Close control panel"
+          title="Close control panel"
+        >
+          ×
+        </button>
+      </div>
       <p class="lead" style="margin-top:6px;">Set slot rules and booking visibility. Slot duration change applies from selected date only when there are no active appointments for that date.</p>
       <form id="settingsForm">
         <div class="field">

@@ -138,6 +138,7 @@ const slotEffectiveDate = document.getElementById("slotEffectiveDate");
 const bookingWindowDays = document.getElementById("bookingWindowDays");
 const weeklyOffCheckboxes = document.querySelectorAll(".weekly-off");
 const settingsCancelBtn = document.getElementById("settingsCancelBtn");
+const settingsCloseBtn = document.getElementById("settingsCloseBtn");
 const manageUsersSection = document.getElementById("manageUsersSection");
 const manageUsersContent = document.getElementById("manageUsersContent");
 const toggleManageUsersBtn = document.getElementById("toggleManageUsersBtn");
@@ -170,6 +171,7 @@ let pendingMfaSetupFactorId = null;
 let pendingMfaVerifyFactorId = null;
 let selectedLoginRole = "dentist";
 let currentAdminProfile = null;
+let settingsModalHistoryActive = false;
 let pendingTotpResolver = null;
 let recoveryModeActive = false;
 const FORGOT_COOLDOWN_SECONDS = 90;
@@ -1346,11 +1348,21 @@ function openSettingsModal() {
   }
   purgeMonth.value = "";
   purgePassword.value = "";
+  if (!settingsModalHistoryActive) {
+    window.history.pushState({ ...(window.history.state || {}), controlPanelOpen: true }, "", window.location.href);
+    settingsModalHistoryActive = true;
+  }
   settingsModal.hidden = false;
 }
 
-function closeSettingsModal() {
+function closeSettingsModal(fromHistory = false) {
+  if (!fromHistory && settingsModalHistoryActive) {
+    settingsModalHistoryActive = false;
+    window.history.back();
+    return;
+  }
   settingsModal.hidden = true;
+  settingsModalHistoryActive = false;
 }
 
 function setCollapseToggleState(button, collapsed, label) {
@@ -2395,6 +2407,7 @@ async function init() {
   }
   openSettingsBtn.addEventListener("click", openSettingsModal);
   settingsCancelBtn.addEventListener("click", closeSettingsModal);
+  settingsCloseBtn?.addEventListener("click", closeSettingsModal);
   settingsForm.addEventListener("submit", saveClinicSettings);
   addUserForm?.addEventListener("submit", handleAddUser);
   refreshUsersBtn?.addEventListener("click", loadAccessUsers);
@@ -2405,6 +2418,11 @@ async function init() {
   settingsModal.addEventListener("click", (event) => {
     if (event.target === settingsModal) {
       closeSettingsModal();
+    }
+  });
+  window.addEventListener("popstate", () => {
+    if (!settingsModal.hidden) {
+      closeSettingsModal(true);
     }
   });
   if (timelineDate) {
