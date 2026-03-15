@@ -19,7 +19,7 @@ Repository:
 ## Tech Stack
 - Static frontend: HTML/CSS/Vanilla JS.
 - Supabase: Postgres + Auth + RLS + Realtime.
-- Netlify Functions: secure maintenance actions (reset past data).
+- Netlify Functions: secure maintenance/admin actions (`reset past data`, `add user`, `list users`).
 - Optional integration path: Twilio WhatsApp API (currently disabled; using WhatsApp redirect links).
 
 ## Pages
@@ -36,12 +36,16 @@ Repository:
   - reads weekly-off and block rules from settings/tables.
   - mobile section switching and mobile booking tab behavior.
 - `assets/js/admin.js`
-  - login/reset password flow.
+  - dentist/staff login with role switch.
+  - reset password flow with clearer forgot-password and recovery states.
+  - TOTP MFA enrollment + verification flow.
   - dashboard analytics + timeline + filters.
   - appointment status actions.
   - date and session blocking controls.
   - emergency bulk session picker (modal with multi-select chips).
-  - settings save logic (duration, visibility, weekly off).
+  - control panel save logic (duration, visibility, weekly off).
+  - control panel role-based sections.
+  - manage users flow with TOTP confirmation before creating a dashboard user.
   - weekly-off conflict protection against active appointments.
   - realtime booking notification (bottom-left + sound) when dashboard open.
   - secure reset past data via Netlify function.
@@ -61,7 +65,9 @@ Main tables:
 
 Auth model:
 - Dentist/staff sign in via Supabase email+password.
+- TOTP MFA is enabled for admin users.
 - Access gate uses `admin_profiles` + RLS.
+- Actor role (`dentist` / `staff`) is written into appointment `status_note` for important admin actions.
 
 ## Functional Rules Implemented
 - Customer slot colors:
@@ -78,13 +84,14 @@ Auth model:
 - Manual booking, approve/reject, and conflict-driven cancellation can use guarded WhatsApp confirmation before finalizing state changes.
 
 ## Dashboard UX Notes
-- Top controls: Refresh, Settings, Logout.
+- Top controls: Refresh, Control Panel, Logout.
 - Day Snapshot is compact and collapsible.
 - Appointments section is also collapsible and default-open.
 - Emergency session blocking uses a dedicated picker modal for reliable desktop/tablet/mobile behavior.
 - Toast feedback for major actions.
 - Live booking alerts appear at bottom-left with notification tone.
 - Admin conflict/warning flows use centered in-app modals where implemented.
+- Staff users do not see high-privilege `Reset Past Data`.
 
 ## Mobile-Specific Decisions
 - Mobile has section-based navigation behavior for Home/Services/Book.
@@ -99,7 +106,8 @@ Required for runtime:
 - `SUPABASE_ANON_KEY`
 
 Required for Netlify function (server-side only):
-- `SUPABASE_SERVICE_ROLE_KEY` (or Supabase Secret key equivalent)
+- `SUPABASE_SERVER_KEY` (preferred; Supabase `sb_secret_...` key)
+- `SUPABASE_SERVICE_ROLE_KEY` (legacy fallback only)
 
 Optional (if Twilio API enabled later):
 - `TWILIO_ACCOUNT_SID`
@@ -123,6 +131,17 @@ Local URLs:
 - `netlify.toml` is configured.
 
 ## Today's Improvements
+- Dentist/staff login UI now includes role switch tabs.
+- Forgot-password flow is clearer with dedicated `Forgot Password`, `Check Your Email`, and `Reset Password` states.
+- Add-user and list-users control-panel actions now run through Netlify functions.
+- Add-user flow requires a fresh authenticator confirmation before user creation.
+- Control panel now uses `SUPABASE_SERVER_KEY` first, with `SUPABASE_SERVICE_ROLE_KEY` as fallback in Netlify functions.
+- Appointment action trail now records actor role in `status_note`:
+  - `Booked by staff`
+  - `Approved by dentist`
+  - `Rejected by staff`
+  - `Unblocked by dentist: ...`
+- Staff no longer see `Reset Past Data` in Control Panel.
 - Customer booking success now preserves the selected date after submission.
 - Customer booking success uses a centered modal with `OK` instead of inline success text.
 - Customer weekly off / blocked day state uses centered yellow overlay over blurred disabled slots.
@@ -153,6 +172,19 @@ Local URLs:
   - realtime dashboard alert with sound for new bookings
 - `BookingWindowControl`
   - booking visibility + weekly off + slot duration settings logic
+
+## Schema Verification
+- `supabase/schema.sql` remains valid for the latest changes.
+- No new table or column was required for:
+  - actor-role notes
+  - forgot-password UI cleanup
+  - staff hiding of reset-past-data
+  - control-panel user-management visibility
+- Current app behavior relies on these existing schema pieces:
+  - `admin_profiles.role`
+  - `appointments.status_note`
+  - `appointments.approved_by`
+  - `appointment_status_history.changed_by`
 
 ## Continuity / Recovery
 If moving to new IDE or after context loss:

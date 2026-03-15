@@ -145,6 +145,7 @@ const newUserEmail = document.getElementById("newUserEmail");
 const newUserPassword = document.getElementById("newUserPassword");
 const newUserRole = document.getElementById("newUserRole");
 const addUserBtn = document.getElementById("addUserBtn");
+const resetPastDataSection = document.getElementById("resetPastDataSection");
 const purgeMonth = document.getElementById("purgeMonth");
 const purgePassword = document.getElementById("purgePassword");
 const purgeDataBtn = document.getElementById("purgeDataBtn");
@@ -397,6 +398,10 @@ function showToast(message, type = "success") {
   setTimeout(() => {
     toast.remove();
   }, 3200);
+}
+
+function getActorRoleLabel() {
+  return currentAdminProfile?.role === "staff" ? "staff" : "dentist";
 }
 
 function showLiveAlert(message, type = "success") {
@@ -1229,6 +1234,9 @@ function openSettingsModal() {
   if (manageUsersSection) {
     manageUsersSection.hidden = currentAdminProfile?.role !== "dentist";
   }
+  if (resetPastDataSection) {
+    resetPastDataSection.hidden = currentAdminProfile?.role !== "dentist";
+  }
   setManageUsersCollapsed(false);
   if (currentAdminProfile?.role === "dentist") {
     loadAccessUsers();
@@ -1761,12 +1769,21 @@ async function updateStatus(appointment, status, reasonOverride = "", notifyWhat
   const isUnblock = status === "Unblock";
   const finalStatus = isUnblock ? "Rejected" : status;
   const unblockReason = isUnblock ? reasonOverride : "";
+  const actorRole = getActorRoleLabel();
   const shouldNotifyWhatsapp = !isUnblock && notifyWhatsapp && (finalStatus === "Approved" || finalStatus === "Rejected");
   const whatsappSentAt = shouldNotifyWhatsapp ? new Date().toISOString() : null;
+  let statusNote = appointment.status_note;
+  if (isUnblock) {
+    statusNote = `Unblocked by ${actorRole}: ${unblockReason}`;
+  } else if (finalStatus === "Approved") {
+    statusNote = `Approved by ${actorRole}`;
+  } else if (finalStatus === "Rejected") {
+    statusNote = `Rejected by ${actorRole}`;
+  }
 
   const patch = {
     status: finalStatus,
-    status_note: isUnblock ? `Unblocked by staff: ${unblockReason}` : appointment.status_note,
+    status_note: statusNote,
     approved_at: finalStatus === "Approved" ? new Date().toISOString() : null,
     approved_by: finalStatus === "Approved" ? uid : null,
     whatsapp_sent_at: whatsappSentAt
@@ -1867,14 +1884,14 @@ async function applySessionBlocks(blockDate, selectedSlots, reason, uid) {
 
 async function cancelAppointmentsForBlockedSessions(conflicts, reason, uid) {
   for (const appointment of conflicts) {
-    const { error } = await supabase
-      .from("appointments")
-      .update({
-        status: "Rejected",
-        status_note: `Cancelled by clinic during session block: ${reason}`,
-        approved_at: null,
-        approved_by: null,
-        whatsapp_sent_at: new Date().toISOString()
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          status: "Rejected",
+          status_note: `Cancelled by ${getActorRoleLabel()} during session block: ${reason}`,
+          approved_at: null,
+          approved_by: null,
+          whatsapp_sent_at: new Date().toISOString()
       })
       .eq("id", appointment.id);
 
@@ -1916,7 +1933,7 @@ function buildRow(appointment) {
   status.appendChild(statusBadge);
 
   const noteText = appointment.status_note
-    ? `${appointment.notes || "-"} | Admin: ${appointment.status_note}`
+    ? `${appointment.notes || "-"} | ${appointment.status_note}`
     : (appointment.notes || "-");
   const notes = makeCell(noteText);
 
@@ -2138,7 +2155,7 @@ async function loadTimeline() {
           if (appointment.notes || appointment.status_note) {
             const note = document.createElement("div");
             note.className = "timeline-sub";
-            note.textContent = appointment.status_note ? `${appointment.notes || "-"} | Admin: ${appointment.status_note}` : (appointment.notes || "-");
+            note.textContent = appointment.status_note ? `${appointment.notes || "-"} | ${appointment.status_note}` : (appointment.notes || "-");
             item.appendChild(note);
           }
 
@@ -2743,6 +2760,7 @@ async function init() {
     const insertPayload = {
       ...payload,
       status: "Approved",
+      status_note: `Booked by ${getActorRoleLabel()}`,
       approved_at: new Date().toISOString(),
       approved_by: uid,
       whatsapp_sent_at: null

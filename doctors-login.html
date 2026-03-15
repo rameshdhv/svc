@@ -475,21 +475,23 @@
         </div>
         <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
       </div>
-      <h3 style="font-size:1.2rem;">Reset Past Data</h3>
-      <p class="lead" style="margin-top:6px;">Delete older records for selected month. This action is permanent.</p>
-      <div class="field">
-        <label for="purgeMonth">Delete Data Before Month</label>
-        <input id="purgeMonth" type="month" />
-      </div>
-      <div class="field">
-        <label for="purgePassword">Confirm Admin Password</label>
-        <input id="purgePassword" type="password" placeholder="Enter your current password" />
-      </div>
-      <div class="modal-actions">
-        <button id="purgeDataBtn" type="button" class="btn secondary">Reset Past Data</button>
+        <div id="resetPastDataSection">
+          <h3 style="font-size:1.2rem;">Reset Past Data</h3>
+          <p class="lead" style="margin-top:6px;">Delete older records for selected month. This action is permanent.</p>
+          <div class="field">
+            <label for="purgeMonth">Delete Data Before Month</label>
+            <input id="purgeMonth" type="month" />
+          </div>
+          <div class="field">
+            <label for="purgePassword">Confirm Admin Password</label>
+            <input id="purgePassword" type="password" placeholder="Enter your current password" />
+          </div>
+          <div class="modal-actions">
+            <button id="purgeDataBtn" type="button" class="btn secondary">Reset Past Data</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
   <div id="slotPickerModal" class="modal-backdrop" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="slotPickerTitle">
