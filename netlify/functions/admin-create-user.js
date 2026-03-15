@@ -2,8 +2,11 @@ const { createClient } = require("@supabase/supabase-js");
 
 const {
   SUPABASE_URL,
+  SUPABASE_SERVER_KEY,
   SUPABASE_SERVICE_ROLE_KEY
 } = process.env;
+
+const SUPABASE_ADMIN_KEY = SUPABASE_SERVER_KEY || SUPABASE_SERVICE_ROLE_KEY;
 
 function json(statusCode, body) {
   return {
@@ -28,7 +31,7 @@ async function getVerifiedUser(adminSupabase, token) {
   try {
     const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: {
-        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        apikey: SUPABASE_ADMIN_KEY,
         Authorization: `Bearer ${token}`
       }
     });
@@ -50,11 +53,11 @@ exports.handler = async (event) => {
     return json(405, { error: "Method not allowed" });
   }
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_ADMIN_KEY) {
     return json(500, { error: "Server env vars missing" });
   }
 
-  const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  const adminSupabase = createClient(SUPABASE_URL, SUPABASE_ADMIN_KEY, {
     auth: { persistSession: false }
   });
 
