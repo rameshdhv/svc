@@ -19,6 +19,32 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
 }
 
+async function getVerifiedUser(adminSupabase, token) {
+  const { data, error } = await adminSupabase.auth.getUser(token);
+  if (!error && data?.user) {
+    return { user: data.user, error: null };
+  }
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      return { user: null, error: payload?.msg || payload?.error_description || payload?.error || error?.message || "Invalid auth token" };
+    }
+
+    const user = await response.json();
+    return { user, error: null };
+  } catch (fallbackError) {
+    return { user: null, error: fallbackError.message || error?.message || "Invalid auth token" };
+  }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return json(405, { error: "Method not allowed" });
@@ -38,15 +64,15 @@ exports.handler = async (event) => {
     return json(401, { error: "Missing auth token" });
   }
 
-  const { data: userData, error: userError } = await adminSupabase.auth.getUser(token);
-  if (userError || !userData?.user) {
-    return json(401, { error: "Invalid auth token" });
+  const { user, error: verifiedUserError } = await getVerifiedUser(adminSupabase, token);
+  if (verifiedUserError || !user) {
+    return json(401, { error: verifiedUserError || "Invalid auth token" });
   }
 
   const { data: adminProfile, error: profileError } = await adminSupabase
     .from("admin_profiles")
     .select("user_id, role")
-    .eq("user_id", userData.user.id)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   if (profileError || !adminProfile) {
