@@ -38,6 +38,38 @@ const servicesSection = document.getElementById("services");
 const sessionId = crypto.randomUUID();
 let clinicSettings = null;
 
+function redirectRecoveryToAdmin() {
+  const url = new URL(window.location.href);
+  const hash = window.location.hash || "";
+  const search = window.location.search || "";
+  const hasRecovery =
+    hash.includes("type=recovery") ||
+    hash.includes("access_token=") ||
+    hash.includes("refresh_token=") ||
+    hash.includes("token_hash=") ||
+    search.includes("type=recovery") ||
+    search.includes("token_hash=") ||
+    url.searchParams.get("mode") === "reset";
+
+  if (!hasRecovery) {
+    return;
+  }
+
+  const target = new URL("./doctors-login.html", window.location.href);
+  if (search) {
+    target.search = search.startsWith("?") ? search : `?${search}`;
+  }
+  if (hash) {
+    target.hash = hash;
+  }
+  if (!target.searchParams.get("mode")) {
+    target.searchParams.set("mode", "reset");
+  }
+  window.location.replace(target.toString());
+}
+
+redirectRecoveryToAdmin();
+
 if (yearEl) {
   yearEl.textContent = String(new Date().getFullYear());
 }

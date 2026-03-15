@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./assets/css/styles.css?v=26" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=27" />
 </head>
 <body>
   <header>
@@ -48,6 +48,22 @@
         <button type="submit" class="btn">Login</button>
       </form>
       <button id="forgotPasswordBtn" type="button" class="btn secondary" style="margin-top:8px;">Forgot Password?</button>
+      <button id="resendConfirmationBtn" type="button" class="btn secondary" style="margin-top:8px;">Resend Confirmation Link</button>
+
+      <form id="confirmLinkForm" hidden class="auth-subflow" style="margin-top: 10px;">
+        <div class="auth-helper-card">
+          <h3>Resend Confirmation Link</h3>
+          <p>Use this if the account exists but email confirmation was not completed yet.</p>
+        </div>
+        <div class="field">
+          <label for="confirmLinkEmail">Registered Email</label>
+          <input id="confirmLinkEmail" type="email" placeholder="doctor@clinic.com" />
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button id="confirmLinkBackBtn" type="button" class="btn secondary">Back to Login</button>
+          <button id="confirmLinkSubmitBtn" type="submit" class="btn">Send Confirmation Link</button>
+        </div>
+      </form>
 
       <form id="forgotForm" hidden class="auth-subflow" style="margin-top: 10px;">
         <div class="auth-helper-card">
@@ -83,6 +99,7 @@
         <div class="modal-actions" style="justify-content:flex-start;">
           <button id="forgotSentBackBtn" type="button" class="btn secondary">Back to Login</button>
           <button id="forgotTryAgainBtn" type="button" class="btn secondary">Use Another Email</button>
+          <button id="forgotSentResendConfirmBtn" type="button" class="btn secondary">Resend Confirmation Link</button>
         </div>
       </div>
 
@@ -509,7 +526,7 @@
 
   <div id="liveAlertRoot" class="toast-stack toast-stack--bottom-left" aria-live="polite" aria-atomic="true"></div>
   <div id="toastRoot" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
-  <script type="module" src="./assets/js/admin.js?v=48"></script>
+  <script type="module" src="./assets/js/admin.js?v=51"></script>
 </body>
 </html>
 

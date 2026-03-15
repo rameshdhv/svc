@@ -19,6 +19,11 @@ const loginForm = document.getElementById("loginForm");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
+const resendConfirmationBtn = document.getElementById("resendConfirmationBtn");
+const confirmLinkForm = document.getElementById("confirmLinkForm");
+const confirmLinkEmail = document.getElementById("confirmLinkEmail");
+const confirmLinkBackBtn = document.getElementById("confirmLinkBackBtn");
+const confirmLinkSubmitBtn = document.getElementById("confirmLinkSubmitBtn");
 const forgotForm = document.getElementById("forgotForm");
 const forgotEmail = document.getElementById("forgotEmail");
 const forgotBackBtn = document.getElementById("forgotBackBtn");
@@ -28,6 +33,7 @@ const forgotSentPanel = document.getElementById("forgotSentPanel");
 const forgotSentMessage = document.getElementById("forgotSentMessage");
 const forgotSentBackBtn = document.getElementById("forgotSentBackBtn");
 const forgotTryAgainBtn = document.getElementById("forgotTryAgainBtn");
+const forgotSentResendConfirmBtn = document.getElementById("forgotSentResendConfirmBtn");
 const resetForm = document.getElementById("resetForm");
 const newPassword = document.getElementById("newPassword");
 const confirmNewPassword = document.getElementById("confirmNewPassword");
@@ -166,6 +172,7 @@ let pendingMfaVerifyFactorId = null;
 let selectedLoginRole = "dentist";
 let currentAdminProfile = null;
 let pendingTotpResolver = null;
+let recoveryModeActive = false;
 const FORGOT_COOLDOWN_SECONDS = 90;
 const FORGOT_COOLDOWN_KEY = "sarvam_forgot_cooldown_until";
 const LIVE_ALERT_POLL_MS = 10000;
@@ -191,6 +198,12 @@ function showLoginView() {
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = false;
   }
+  if (resendConfirmationBtn) {
+    resendConfirmationBtn.hidden = false;
+  }
+  if (confirmLinkForm) {
+    confirmLinkForm.hidden = true;
+  }
   if (forgotForm) {
     forgotForm.hidden = true;
   }
@@ -206,8 +219,44 @@ function showLoginView() {
   if (mfaVerifyPanel) {
     mfaVerifyPanel.hidden = true;
   }
+  recoveryModeActive = false;
   setSelectedLoginRole(selectedLoginRole);
   loginStatus.textContent = "";
+}
+
+function showConfirmationLinkView() {
+  if (loginForm) {
+    loginForm.hidden = true;
+  }
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.hidden = true;
+  }
+  if (resendConfirmationBtn) {
+    resendConfirmationBtn.hidden = true;
+  }
+  if (confirmLinkForm) {
+    confirmLinkForm.hidden = false;
+  }
+  if (forgotForm) {
+    forgotForm.hidden = true;
+  }
+  if (forgotSentPanel) {
+    forgotSentPanel.hidden = true;
+  }
+  if (resetForm) {
+    resetForm.hidden = true;
+  }
+  if (mfaSetupPanel) {
+    mfaSetupPanel.hidden = true;
+  }
+  if (mfaVerifyPanel) {
+    mfaVerifyPanel.hidden = true;
+  }
+  updateAuthHeader(
+    "Resend Confirmation Link",
+    "Enter the registered email address and we will resend the account confirmation link."
+  );
+  window.requestAnimationFrame(() => confirmLinkEmail?.focus());
 }
 
 function showForgotView() {
@@ -216,6 +265,12 @@ function showForgotView() {
   }
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = true;
+  }
+  if (resendConfirmationBtn) {
+    resendConfirmationBtn.hidden = true;
+  }
+  if (confirmLinkForm) {
+    confirmLinkForm.hidden = true;
   }
   if (forgotForm) {
     forgotForm.hidden = false;
@@ -245,6 +300,12 @@ function showForgotSentView(email = "") {
   }
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = true;
+  }
+  if (resendConfirmationBtn) {
+    resendConfirmationBtn.hidden = true;
+  }
+  if (confirmLinkForm) {
+    confirmLinkForm.hidden = true;
   }
   if (forgotForm) {
     forgotForm.hidden = true;
@@ -279,6 +340,12 @@ function showResetView() {
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = true;
   }
+  if (resendConfirmationBtn) {
+    resendConfirmationBtn.hidden = true;
+  }
+  if (confirmLinkForm) {
+    confirmLinkForm.hidden = true;
+  }
   if (forgotForm) {
     forgotForm.hidden = true;
   }
@@ -307,6 +374,12 @@ function showMfaSetupView() {
   }
   if (forgotPasswordBtn) {
     forgotPasswordBtn.hidden = true;
+  }
+  if (resendConfirmationBtn) {
+    resendConfirmationBtn.hidden = true;
+  }
+  if (confirmLinkForm) {
+    confirmLinkForm.hidden = true;
   }
   if (forgotForm) {
     forgotForm.hidden = true;
@@ -880,7 +953,7 @@ async function handleForgotPassword(event) {
     return;
   }
 
-  const redirectTo = `${window.location.origin}/doctors-login.html`;
+  const redirectTo = `${window.location.origin}/doctors-login.html?mode=reset`;
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) {
     setStatus(loginStatus, error.message, "error");
@@ -892,6 +965,30 @@ async function handleForgotPassword(event) {
   startForgotCooldown(newCooldownUntil);
   setStatus(loginStatus, "Password reset link sent. Please check your email.", "ok");
   showForgotSentView(email);
+}
+
+async function handleResendConfirmation(event) {
+  event.preventDefault();
+  const email = confirmLinkEmail.value.trim().toLowerCase();
+  if (!email) {
+    setStatus(loginStatus, "Enter your registered email.", "error");
+    return;
+  }
+
+  const emailRedirectTo = `${window.location.origin}/doctors-login.html`;
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo }
+  });
+
+  if (error) {
+    setStatus(loginStatus, error.message, "error");
+    return;
+  }
+
+  setStatus(loginStatus, "Confirmation link sent. Please check your email.", "ok");
+  showLoginView();
 }
 
 function startForgotCooldown(cooldownUntil) {
@@ -939,6 +1036,8 @@ async function handleResetPassword(event) {
   }
 
   await supabase.auth.signOut().catch(() => {});
+  const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+  window.history.replaceState({}, "", cleanUrl);
   setStatus(loginStatus, "Password updated. Please login with new password.", "ok");
   showLoginView();
   resetForm.reset();
@@ -948,7 +1047,20 @@ async function handleResetPassword(event) {
 function isRecoveryLink() {
   const hash = window.location.hash || "";
   const query = window.location.search || "";
-  return hash.includes("type=recovery") || query.includes("type=recovery");
+  return (
+    hash.includes("type=recovery") ||
+    hash.includes("access_token=") ||
+    hash.includes("refresh_token=") ||
+    hash.includes("token_hash=") ||
+    query.includes("type=recovery") ||
+    query.includes("token_hash=") ||
+    isResetModeRequested()
+  );
+}
+
+function isResetModeRequested() {
+  const url = new URL(window.location.href);
+  return url.searchParams.get("mode") === "reset";
 }
 
 async function handleRecoveryTokenFromUrl() {
@@ -969,8 +1081,9 @@ async function handleRecoveryTokenFromUrl() {
     return false;
   }
 
-  const cleanUrl = `${url.origin}${url.pathname}`;
+  const cleanUrl = `${url.origin}${url.pathname}?mode=reset`;
   window.history.replaceState({}, "", cleanUrl);
+  recoveryModeActive = true;
   showResetView();
   setStatus(loginStatus, "Recovery verified. Set your new password below.", "ok");
   return true;
@@ -2356,9 +2469,13 @@ async function init() {
   });
 
   forgotPasswordBtn.addEventListener("click", showForgotView);
+  resendConfirmationBtn?.addEventListener("click", showConfirmationLinkView);
+  confirmLinkBackBtn?.addEventListener("click", showLoginView);
+  confirmLinkForm?.addEventListener("submit", handleResendConfirmation);
   forgotBackBtn?.addEventListener("click", showLoginView);
   forgotSentBackBtn?.addEventListener("click", showLoginView);
   forgotTryAgainBtn?.addEventListener("click", showForgotView);
+  forgotSentResendConfirmBtn?.addEventListener("click", showConfirmationLinkView);
   forgotForm.addEventListener("submit", handleForgotPassword);
   const savedCooldown = Number(localStorage.getItem(FORGOT_COOLDOWN_KEY) || 0);
   if (savedCooldown > Date.now()) {
@@ -2367,16 +2484,18 @@ async function init() {
   resetForm.addEventListener("submit", handleResetPassword);
   resetBackBtn?.addEventListener("click", showLoginView);
   supabase.auth.onAuthStateChange((eventName) => {
-    if (eventName === "PASSWORD_RECOVERY") {
+    if (eventName === "PASSWORD_RECOVERY" || (eventName === "SIGNED_IN" && (recoveryModeActive || isResetModeRequested()))) {
+      recoveryModeActive = true;
       showResetView();
       setStatus(loginStatus, "Recovery verified. Set your new password below.", "ok");
     }
   });
   const handledTokenRecovery = await handleRecoveryTokenFromUrl();
-  if (!handledTokenRecovery && isRecoveryLink()) {
+  if (handledTokenRecovery || isResetModeRequested() || isRecoveryLink()) {
+    recoveryModeActive = true;
     showResetView();
     setStatus(loginStatus, "Set your new password below.", "ok");
-  } else if (!isRecoveryLink()) {
+  } else if (!isRecoveryLink() && !isResetModeRequested()) {
     const { data: sessionData } = await supabase.auth.getSession();
     if (sessionData.session) {
       try {
