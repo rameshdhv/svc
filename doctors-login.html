@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./assets/css/styles.css?v=24" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=26" />
 </head>
 <body>
   <header>
@@ -29,8 +29,12 @@
 
   <main class="container admin-shell">
     <section class="card" id="authCard">
-      <h1 style="font-size:2rem;">Doctor Login</h1>
-      <p class="lead">Dentist and staff can access dashboard using email and password.</p>
+      <div class="role-switch" role="tablist" aria-label="Login role">
+        <button type="button" class="role-switch-btn active" id="dentistRoleBtn" data-role="dentist" aria-selected="true">Login as Dentist</button>
+        <button type="button" class="role-switch-btn" id="staffRoleBtn" data-role="staff" aria-selected="false">Login as Staff</button>
+      </div>
+      <h1 id="authTitle" style="font-size:2rem;">Dentist Login</h1>
+      <p class="lead" id="authLead">Dentist can access dashboard using email, password, and authenticator code.</p>
 
       <form id="loginForm">
         <div class="field">
@@ -45,16 +49,48 @@
       </form>
       <button id="forgotPasswordBtn" type="button" class="btn secondary" style="margin-top:8px;">Forgot Password?</button>
 
-      <form id="forgotForm" hidden style="margin-top: 10px;">
+      <form id="forgotForm" hidden class="auth-subflow" style="margin-top: 10px;">
+        <div class="auth-helper-card">
+          <h3>Reset Your Password</h3>
+          <p>Enter your registered email address. We will send a reset link to that inbox.</p>
+          <ol class="auth-helper-steps">
+            <li>Open the reset email.</li>
+            <li>Click the link from the same device if possible.</li>
+            <li>This page will open the new password form automatically.</li>
+          </ol>
+        </div>
         <div class="field">
           <label for="forgotEmail">Registered Email</label>
           <input id="forgotEmail" type="email" placeholder="doctor@clinic.com" />
         </div>
-        <button id="forgotSubmitBtn" type="submit" class="btn">Send Reset Link</button>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button id="forgotBackBtn" type="button" class="btn secondary">Back to Login</button>
+          <button id="forgotSubmitBtn" type="submit" class="btn">Send Reset Link</button>
+        </div>
         <small id="forgotCooldownText" class="lead" style="display:block; margin-top:6px;"></small>
       </form>
 
-      <form id="resetForm" hidden style="margin-top: 10px;">
+      <div id="forgotSentPanel" hidden class="auth-subflow" style="margin-top: 10px;">
+        <div class="auth-helper-card auth-helper-success">
+          <h3>Reset Link Sent</h3>
+          <p id="forgotSentMessage">Check your inbox and open the password reset link.</p>
+          <ol class="auth-helper-steps">
+            <li>Open the email we sent.</li>
+            <li>Click the reset link.</li>
+            <li>Create a new password here, then log in again.</li>
+          </ol>
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button id="forgotSentBackBtn" type="button" class="btn secondary">Back to Login</button>
+          <button id="forgotTryAgainBtn" type="button" class="btn secondary">Use Another Email</button>
+        </div>
+      </div>
+
+      <form id="resetForm" hidden class="auth-subflow" style="margin-top: 10px;">
+        <div class="auth-helper-card">
+          <h3>Create New Password</h3>
+          <p>Use a new password for this dashboard account. After saving, log in again with your authenticator code.</p>
+        </div>
         <div class="field">
           <label for="newPassword">New Password</label>
           <input id="newPassword" type="password" placeholder="Enter new password" />
@@ -63,8 +99,42 @@
           <label for="confirmNewPassword">Confirm Password</label>
           <input id="confirmNewPassword" type="password" placeholder="Re-enter new password" />
         </div>
-        <button type="submit" class="btn">Update Password</button>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button id="resetBackBtn" type="button" class="btn secondary">Back to Login</button>
+          <button type="submit" class="btn">Update Password</button>
+        </div>
       </form>
+
+      <div id="mfaSetupPanel" hidden style="margin-top: 10px;">
+        <h3>Set Up Authenticator</h3>
+        <p class="lead" style="margin-top:6px;">Scan this QR code using Google Authenticator or any TOTP app linked to this admin account, then enter the 6-digit code.</p>
+        <div id="mfaQrWrap" class="mfa-qr-wrap"></div>
+        <div class="field">
+          <label for="mfaSecret">Setup Key</label>
+          <input id="mfaSecret" type="text" readonly />
+        </div>
+        <div class="field">
+          <label for="mfaEnrollCode">Authenticator Code</label>
+          <input id="mfaEnrollCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter 6-digit code" />
+        </div>
+        <div class="modal-actions">
+          <button id="mfaSetupCancelBtn" type="button" class="btn secondary">Back</button>
+          <button id="mfaSetupVerifyBtn" type="button" class="btn">Verify & Continue</button>
+        </div>
+      </div>
+
+      <div id="mfaVerifyPanel" hidden style="margin-top: 10px;">
+        <h3>Authenticator Check</h3>
+        <p class="lead" style="margin-top:6px;">Enter the current 6-digit code from Google Authenticator to continue to the admin dashboard.</p>
+        <div class="field">
+          <label for="mfaVerifyCode">Authenticator Code</label>
+          <input id="mfaVerifyCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter 6-digit code" />
+        </div>
+        <div class="modal-actions">
+          <button id="mfaVerifyCancelBtn" type="button" class="btn secondary">Back</button>
+          <button id="mfaVerifyBtn" type="button" class="btn">Verify & Continue</button>
+        </div>
+      </div>
 
       <div class="status" id="loginStatus" aria-live="polite"></div>
     </section>
@@ -75,7 +145,7 @@
           <h2 style="font-size:1.8rem;">Appointments Dashboard</h2>
           <div class="inline-actions">
             <button id="refreshDashboardBtn" class="btn secondary" type="button">Refresh</button>
-            <button id="openSettingsBtn" class="btn secondary" type="button" aria-label="Open settings" title="Settings">Settings ⚙</button>
+            <button id="openSettingsBtn" class="btn secondary" type="button" aria-label="Open control panel" title="Control Panel">Control Panel ⚙</button>
             <button id="logout" class="btn secondary" type="button">Logout</button>
           </div>
         </div>
@@ -98,7 +168,7 @@
           <div class="inline-actions">
             <input id="timelineDate" type="date" />
             <button id="refreshTimelineBtn" type="button" class="btn secondary">Refresh</button>
-            <button id="toggleTimelineBtn" type="button" class="btn secondary">Collapse</button>
+            <button id="toggleTimelineBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse day snapshot" title="Collapse day snapshot">▴</button>
           </div>
         </div>
         <div id="timelineContent">
@@ -111,7 +181,7 @@
         <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
           <h3>Appointments</h3>
           <div class="inline-actions">
-            <button id="toggleAppointmentsBtn" type="button" class="btn secondary">Collapse</button>
+            <button id="toggleAppointmentsBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse appointments" title="Collapse appointments">▴</button>
           </div>
         </div>
         <div id="appointmentsContent">
@@ -181,7 +251,7 @@
         <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
           <h3>Emergency Session Blocking</h3>
           <div class="inline-actions">
-            <button id="toggleEmergencyBlockBtn" type="button" class="btn secondary">Collapse</button>
+            <button id="toggleEmergencyBlockBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse emergency session blocking" title="Collapse emergency session blocking">▴</button>
           </div>
         </div>
         <div id="emergencyBlockContent">
@@ -216,7 +286,7 @@
         <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
           <h3>Holiday / Leave Blocking</h3>
           <div class="inline-actions">
-            <button id="toggleLeaveBlockBtn" type="button" class="btn secondary">Collapse</button>
+            <button id="toggleLeaveBlockBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse holiday and leave blocking" title="Collapse holiday and leave blocking">▴</button>
           </div>
         </div>
         <div id="leaveBlockContent">
@@ -306,9 +376,24 @@
     </div>
   </div>
 
+  <div id="totpConfirmModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="totpConfirmTitle">
+      <h3 id="totpConfirmTitle">Authenticator Check</h3>
+      <p id="totpConfirmMessage" class="lead" style="margin-top: 6px;">Enter your current 6-digit authenticator code to continue.</p>
+      <div class="field" style="margin-top: 10px;">
+        <label for="totpConfirmCode">Authenticator Code</label>
+        <input id="totpConfirmCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter 6-digit code" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="totpConfirmCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="totpConfirmOk" class="btn">Verify</button>
+      </div>
+    </div>
+  </div>
+
   <div id="settingsModal" class="modal-backdrop" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <h3 id="settingsTitle">Clinic Settings</h3>
+      <h3 id="settingsTitle">Control Panel</h3>
       <p class="lead" style="margin-top:6px;">Set slot rules and booking visibility. Slot duration change applies from selected date only when there are no active appointments for that date.</p>
       <form id="settingsForm">
         <div class="field">
@@ -344,7 +429,52 @@
         </div>
       </form>
 
-      <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
+      <div id="manageUsersSection">
+        <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
+        <div class="section-head">
+          <div>
+            <h3 style="font-size:1.2rem;">Manage Users</h3>
+            <p class="lead" style="margin-top:6px;">Dentist can create new dashboard users without opening Supabase.</p>
+          </div>
+          <button id="toggleManageUsersBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse manage users" title="Collapse manage users">▴</button>
+        </div>
+        <div id="manageUsersContent">
+        <div class="section-head" style="margin-bottom:10px;">
+          <div>
+            <h4 style="font-size:1rem;">Current Access Users</h4>
+            <p class="lead" id="userAccessSummary" style="margin-top:6px;">Loading users...</p>
+          </div>
+          <button id="refreshUsersBtn" type="button" class="icon-btn collapse-toggle" aria-label="Refresh users" title="Refresh users">↻</button>
+        </div>
+        <div id="userAccessList" class="user-access-list"></div>
+        <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
+        <form id="addUserForm">
+          <div class="field">
+            <label for="newUserName">Full Name</label>
+            <input id="newUserName" type="text" placeholder="Doctor or staff name" />
+          </div>
+          <div class="field">
+            <label for="newUserEmail">Email Address</label>
+            <input id="newUserEmail" type="email" placeholder="staff@clinic.com" />
+          </div>
+          <div class="field">
+            <label for="newUserPassword">Temporary Password</label>
+            <input id="newUserPassword" type="password" placeholder="Set temporary password" />
+          </div>
+          <div class="field">
+            <label for="newUserRole">Role</label>
+            <select id="newUserRole">
+              <option value="staff">Staff</option>
+              <option value="dentist">Dentist</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button id="addUserBtn" type="submit" class="btn">Add User</button>
+          </div>
+        </form>
+        </div>
+        <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
+      </div>
       <h3 style="font-size:1.2rem;">Reset Past Data</h3>
       <p class="lead" style="margin-top:6px;">Delete older records for selected month. This action is permanent.</p>
       <div class="field">
@@ -377,7 +507,7 @@
 
   <div id="liveAlertRoot" class="toast-stack toast-stack--bottom-left" aria-live="polite" aria-atomic="true"></div>
   <div id="toastRoot" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
-  <script type="module" src="./assets/js/admin.js?v=43"></script>
+  <script type="module" src="./assets/js/admin.js?v=48"></script>
 </body>
 </html>
 

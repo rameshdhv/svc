@@ -10,17 +10,38 @@ import {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const authCard = document.getElementById("authCard");
+const authTitle = document.getElementById("authTitle");
+const authLead = document.getElementById("authLead");
+const dentistRoleBtn = document.getElementById("dentistRoleBtn");
+const staffRoleBtn = document.getElementById("staffRoleBtn");
 const loginForm = document.getElementById("loginForm");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 const forgotForm = document.getElementById("forgotForm");
 const forgotEmail = document.getElementById("forgotEmail");
+const forgotBackBtn = document.getElementById("forgotBackBtn");
 const forgotSubmitBtn = document.getElementById("forgotSubmitBtn");
 const forgotCooldownText = document.getElementById("forgotCooldownText");
+const forgotSentPanel = document.getElementById("forgotSentPanel");
+const forgotSentMessage = document.getElementById("forgotSentMessage");
+const forgotSentBackBtn = document.getElementById("forgotSentBackBtn");
+const forgotTryAgainBtn = document.getElementById("forgotTryAgainBtn");
 const resetForm = document.getElementById("resetForm");
 const newPassword = document.getElementById("newPassword");
 const confirmNewPassword = document.getElementById("confirmNewPassword");
+const resetBackBtn = document.getElementById("resetBackBtn");
+const mfaSetupPanel = document.getElementById("mfaSetupPanel");
+const mfaQrWrap = document.getElementById("mfaQrWrap");
+const mfaSecret = document.getElementById("mfaSecret");
+const mfaEnrollCode = document.getElementById("mfaEnrollCode");
+const mfaSetupCancelBtn = document.getElementById("mfaSetupCancelBtn");
+const mfaSetupVerifyBtn = document.getElementById("mfaSetupVerifyBtn");
+const mfaVerifyPanel = document.getElementById("mfaVerifyPanel");
+const mfaVerifyCode = document.getElementById("mfaVerifyCode");
+const mfaVerifyCancelBtn = document.getElementById("mfaVerifyCancelBtn");
+const mfaVerifyBtn = document.getElementById("mfaVerifyBtn");
 const loginStatus = document.getElementById("loginStatus");
 const appStatus = document.getElementById("appStatus");
 const toastRoot = document.getElementById("toastRoot");
@@ -99,6 +120,11 @@ const blockConflictProceed = document.getElementById("blockConflictProceed");
 const noticeModal = document.getElementById("noticeModal");
 const noticeMessage = document.getElementById("noticeMessage");
 const noticeOk = document.getElementById("noticeOk");
+const totpConfirmModal = document.getElementById("totpConfirmModal");
+const totpConfirmMessage = document.getElementById("totpConfirmMessage");
+const totpConfirmCode = document.getElementById("totpConfirmCode");
+const totpConfirmCancel = document.getElementById("totpConfirmCancel");
+const totpConfirmOk = document.getElementById("totpConfirmOk");
 const openSettingsBtn = document.getElementById("openSettingsBtn");
 const settingsModal = document.getElementById("settingsModal");
 const settingsForm = document.getElementById("settingsForm");
@@ -107,6 +133,18 @@ const slotEffectiveDate = document.getElementById("slotEffectiveDate");
 const bookingWindowDays = document.getElementById("bookingWindowDays");
 const weeklyOffCheckboxes = document.querySelectorAll(".weekly-off");
 const settingsCancelBtn = document.getElementById("settingsCancelBtn");
+const manageUsersSection = document.getElementById("manageUsersSection");
+const manageUsersContent = document.getElementById("manageUsersContent");
+const toggleManageUsersBtn = document.getElementById("toggleManageUsersBtn");
+const refreshUsersBtn = document.getElementById("refreshUsersBtn");
+const userAccessSummary = document.getElementById("userAccessSummary");
+const userAccessList = document.getElementById("userAccessList");
+const addUserForm = document.getElementById("addUserForm");
+const newUserName = document.getElementById("newUserName");
+const newUserEmail = document.getElementById("newUserEmail");
+const newUserPassword = document.getElementById("newUserPassword");
+const newUserRole = document.getElementById("newUserRole");
+const addUserBtn = document.getElementById("addUserBtn");
 const purgeMonth = document.getElementById("purgeMonth");
 const purgePassword = document.getElementById("purgePassword");
 const purgeDataBtn = document.getElementById("purgeDataBtn");
@@ -122,6 +160,11 @@ let liveBookingPollTimer = null;
 let liveAlertPrimed = false;
 const seenLiveAlertAppointmentIds = new Set();
 let alertAudioContext = null;
+let pendingMfaSetupFactorId = null;
+let pendingMfaVerifyFactorId = null;
+let selectedLoginRole = "dentist";
+let currentAdminProfile = null;
+let pendingTotpResolver = null;
 const FORGOT_COOLDOWN_SECONDS = 90;
 const FORGOT_COOLDOWN_KEY = "sarvam_forgot_cooldown_until";
 const LIVE_ALERT_POLL_MS = 10000;
@@ -129,6 +172,217 @@ const LIVE_ALERT_POLL_MS = 10000;
 function setStatus(el, text, type = "") {
   el.className = `status ${type}`;
   el.textContent = text;
+}
+
+function updateAuthHeader(title, lead) {
+  if (authTitle) {
+    authTitle.textContent = title;
+  }
+  if (authLead) {
+    authLead.textContent = lead;
+  }
+}
+
+function showLoginView() {
+  if (loginForm) {
+    loginForm.hidden = false;
+  }
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.hidden = false;
+  }
+  if (forgotForm) {
+    forgotForm.hidden = true;
+  }
+  if (forgotSentPanel) {
+    forgotSentPanel.hidden = true;
+  }
+  if (resetForm) {
+    resetForm.hidden = true;
+  }
+  if (mfaSetupPanel) {
+    mfaSetupPanel.hidden = true;
+  }
+  if (mfaVerifyPanel) {
+    mfaVerifyPanel.hidden = true;
+  }
+  setSelectedLoginRole(selectedLoginRole);
+  loginStatus.textContent = "";
+}
+
+function showForgotView() {
+  if (loginForm) {
+    loginForm.hidden = true;
+  }
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.hidden = true;
+  }
+  if (forgotForm) {
+    forgotForm.hidden = false;
+  }
+  if (forgotSentPanel) {
+    forgotSentPanel.hidden = true;
+  }
+  if (resetForm) {
+    resetForm.hidden = true;
+  }
+  if (mfaSetupPanel) {
+    mfaSetupPanel.hidden = true;
+  }
+  if (mfaVerifyPanel) {
+    mfaVerifyPanel.hidden = true;
+  }
+  updateAuthHeader(
+    "Forgot Password",
+    "Enter the registered email address for this dashboard account. We'll send a secure reset link."
+  );
+  window.requestAnimationFrame(() => forgotEmail?.focus());
+}
+
+function showForgotSentView(email = "") {
+  if (loginForm) {
+    loginForm.hidden = true;
+  }
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.hidden = true;
+  }
+  if (forgotForm) {
+    forgotForm.hidden = true;
+  }
+  if (forgotSentPanel) {
+    forgotSentPanel.hidden = false;
+  }
+  if (resetForm) {
+    resetForm.hidden = true;
+  }
+  if (mfaSetupPanel) {
+    mfaSetupPanel.hidden = true;
+  }
+  if (mfaVerifyPanel) {
+    mfaVerifyPanel.hidden = true;
+  }
+  updateAuthHeader(
+    "Check Your Email",
+    "A reset link has been sent. Open it, then return here to create a new password."
+  );
+  if (forgotSentMessage) {
+    forgotSentMessage.textContent = email
+      ? `We sent a password reset link to ${email}.`
+      : "We sent a password reset link to your registered email address.";
+  }
+}
+
+function showResetView() {
+  if (loginForm) {
+    loginForm.hidden = true;
+  }
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.hidden = true;
+  }
+  if (forgotForm) {
+    forgotForm.hidden = true;
+  }
+  if (forgotSentPanel) {
+    forgotSentPanel.hidden = true;
+  }
+  if (resetForm) {
+    resetForm.hidden = false;
+  }
+  if (mfaSetupPanel) {
+    mfaSetupPanel.hidden = true;
+  }
+  if (mfaVerifyPanel) {
+    mfaVerifyPanel.hidden = true;
+  }
+  updateAuthHeader(
+    "Reset Password",
+    "Set a new password for your dashboard account. After saving, log in again with your new password and authenticator code."
+  );
+  window.requestAnimationFrame(() => newPassword?.focus());
+}
+
+function showMfaSetupView() {
+  if (loginForm) {
+    loginForm.hidden = true;
+  }
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.hidden = true;
+  }
+  if (forgotForm) {
+    forgotForm.hidden = true;
+  }
+  if (forgotSentPanel) {
+    forgotSentPanel.hidden = true;
+  }
+  if (resetForm) {
+    resetForm.hidden = true;
+  }
+  if (mfaSetupPanel) {
+    mfaSetupPanel.hidden = false;
+  }
+  if (mfaVerifyPanel) {
+    mfaVerifyPanel.hidden = true;
+  }
+}
+
+function showMfaVerifyView() {
+  if (loginForm) {
+    loginForm.hidden = true;
+  }
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.hidden = true;
+  }
+  if (forgotForm) {
+    forgotForm.hidden = true;
+  }
+  if (forgotSentPanel) {
+    forgotSentPanel.hidden = true;
+  }
+  if (resetForm) {
+    resetForm.hidden = true;
+  }
+  if (mfaSetupPanel) {
+    mfaSetupPanel.hidden = true;
+  }
+  if (mfaVerifyPanel) {
+    mfaVerifyPanel.hidden = false;
+  }
+}
+
+function resetMfaState() {
+  pendingMfaSetupFactorId = null;
+  pendingMfaVerifyFactorId = null;
+  if (mfaQrWrap) {
+    mfaQrWrap.innerHTML = "";
+  }
+  if (mfaSecret) {
+    mfaSecret.value = "";
+  }
+  if (mfaEnrollCode) {
+    mfaEnrollCode.value = "";
+  }
+  if (mfaVerifyCode) {
+    mfaVerifyCode.value = "";
+  }
+}
+
+function setSelectedLoginRole(role) {
+  selectedLoginRole = role === "staff" ? "staff" : "dentist";
+  if (dentistRoleBtn) {
+    dentistRoleBtn.classList.toggle("active", selectedLoginRole === "dentist");
+    dentistRoleBtn.setAttribute("aria-selected", selectedLoginRole === "dentist" ? "true" : "false");
+  }
+  if (staffRoleBtn) {
+    staffRoleBtn.classList.toggle("active", selectedLoginRole === "staff");
+    staffRoleBtn.setAttribute("aria-selected", selectedLoginRole === "staff" ? "true" : "false");
+  }
+  if (authTitle) {
+    updateAuthHeader(
+      selectedLoginRole === "staff" ? "Staff Login" : "Dentist Login",
+      selectedLoginRole === "staff"
+      ? "Staff can access dashboard using email, password, and authenticator code."
+      : "Dentist can access dashboard using email, password, and authenticator code."
+    );
+  }
 }
 
 function showToast(message, type = "success") {
@@ -229,10 +483,11 @@ async function currentUserId() {
   return data?.user?.id || null;
 }
 
-async function isAdmin() {
+async function getAdminProfile() {
   const uid = await currentUserId();
   if (!uid) {
-    return false;
+    currentAdminProfile = null;
+    return null;
   }
 
   const { data, error } = await supabase
@@ -241,7 +496,162 @@ async function isAdmin() {
     .eq("user_id", uid)
     .maybeSingle();
 
-  return !error && !!data;
+  if (error || !data) {
+    currentAdminProfile = null;
+    return null;
+  }
+
+  currentAdminProfile = data;
+  return data;
+}
+
+async function isAdmin() {
+  const profile = await getAdminProfile();
+  return !!profile;
+}
+
+async function getMfaState() {
+  const { data: factorData, error: factorError } = await supabase.auth.mfa.listFactors();
+  if (factorError) {
+    throw new Error(factorError.message);
+  }
+
+  const { data: assuranceData, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assuranceError) {
+    throw new Error(assuranceError.message);
+  }
+
+  return {
+    factors: factorData || { all: [], totp: [] },
+    assurance: assuranceData || { currentLevel: null, nextLevel: null }
+  };
+}
+
+function renderMfaQr(qrCode) {
+  if (!mfaQrWrap) {
+    return;
+  }
+  mfaQrWrap.innerHTML = "";
+  if (!qrCode) {
+    return;
+  }
+  if (qrCode.includes("<svg")) {
+    mfaQrWrap.innerHTML = qrCode;
+    return;
+  }
+  const qrImage = document.createElement("img");
+  qrImage.src = qrCode.startsWith("data:")
+    ? qrCode
+    : `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(qrCode)))}`;
+  qrImage.alt = "Authenticator setup QR code";
+  mfaQrWrap.appendChild(qrImage);
+}
+
+async function finishAdminSignIn() {
+  ensureAlertAudioContext();
+  if (authCard) {
+    authCard.hidden = true;
+  }
+  dashboard.hidden = false;
+  showLoginView();
+  resetMfaState();
+  setStatus(appStatus, "Logged in. Loading appointments...", "ok");
+  startLiveBookingNotifications();
+  await loadDashboard();
+}
+
+async function cancelMfaFlow() {
+  await supabase.auth.signOut();
+  currentAdminProfile = null;
+  if (authCard) {
+    authCard.hidden = false;
+  }
+  dashboard.hidden = true;
+  showLoginView();
+  resetMfaState();
+  passwordInput.value = "";
+  setStatus(loginStatus, "Login cancelled. Please sign in again.", "warn");
+}
+
+async function startMfaEnrollment(existingFactors = []) {
+  const staleTotpFactors = existingFactors.filter(
+    (factor) => factor.factor_type === "totp" && factor.status === "unverified"
+  );
+
+  for (const factor of staleTotpFactors) {
+    await supabase.auth.mfa.unenroll({ factorId: factor.id }).catch(() => {});
+  }
+
+  const { data, error } = await supabase.auth.mfa.enroll({
+    factorType: "totp",
+    issuer: "Sarvam Dental Clinic",
+    friendlyName: "Clinic Admin"
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  pendingMfaSetupFactorId = data.id;
+  if (mfaSecret) {
+    mfaSecret.value = data.totp.secret || "";
+  }
+  renderMfaQr(data.totp.qr_code);
+  showMfaSetupView();
+  setStatus(loginStatus, "Scan the QR code with your authenticator app, then enter the code to finish setup.", "ok");
+}
+
+async function promptMfaVerification(factorId) {
+  pendingMfaVerifyFactorId = factorId;
+  if (mfaVerifyCode) {
+    mfaVerifyCode.value = "";
+    mfaVerifyCode.focus();
+  }
+  showMfaVerifyView();
+  setStatus(loginStatus, "Enter the current 6-digit code from your authenticator app.", "ok");
+}
+
+async function continueAdminAuthFlow(options = {}) {
+  const { enforceSelectedRole = true } = options;
+  const adminProfile = await getAdminProfile();
+  if (!adminProfile) {
+    setStatus(loginStatus, "No admin access. Add this user in admin_profiles table.", "error");
+    await supabase.auth.signOut();
+    showLoginView();
+    return;
+  }
+
+  if (
+    enforceSelectedRole &&
+    selectedLoginRole &&
+    ((selectedLoginRole === "dentist" && adminProfile.role !== "dentist") ||
+      (selectedLoginRole === "staff" && adminProfile.role !== "staff"))
+  ) {
+    setStatus(
+      loginStatus,
+      `This account is registered as ${adminProfile.role}. Please use the correct login tab.`,
+      "error"
+    );
+    await supabase.auth.signOut();
+    showLoginView();
+    currentAdminProfile = null;
+    return;
+  }
+
+  const { factors, assurance } = await getMfaState();
+  const verifiedTotpFactors = Array.isArray(factors?.totp) ? factors.totp : [];
+
+  if (verifiedTotpFactors.length === 0) {
+    await startMfaEnrollment(Array.isArray(factors?.all) ? factors.all : []);
+    return;
+  }
+
+  if (assurance.currentLevel !== "aal2") {
+    await promptMfaVerification(verifiedTotpFactors[0].id);
+    return;
+  }
+
+  await finishAdminSignIn();
 }
 
 async function loadClinicSettings() {
@@ -384,21 +794,68 @@ async function handleLogin(event) {
     return;
   }
 
-  setStatus(loginStatus, "Login successful.", "ok");
-  ensureAlertAudioContext();
+  setStatus(loginStatus, "Password verified. Checking authenticator...", "ok");
 
-  const admin = await isAdmin();
-  if (!admin) {
-    setStatus(loginStatus, "No admin access. Add this user in admin_profiles table.", "error");
-    await supabase.auth.signOut();
+  try {
+    await continueAdminAuthFlow({ enforceSelectedRole: true });
+  } catch (authError) {
+    setStatus(loginStatus, authError.message || "Unable to continue login.", "error");
+    await supabase.auth.signOut().catch(() => {});
+    showLoginView();
+    resetMfaState();
+  }
+}
+
+async function handleMfaSetupVerify() {
+  const code = mfaEnrollCode.value.trim();
+  if (!pendingMfaSetupFactorId) {
+    setStatus(loginStatus, "Authenticator setup expired. Please login again.", "error");
+    await cancelMfaFlow();
+    return;
+  }
+  if (!/^\d{6}$/.test(code)) {
+    setStatus(loginStatus, "Enter the 6-digit authenticator code.", "error");
     return;
   }
 
-  document.getElementById("authCard").hidden = true;
-  dashboard.hidden = false;
-  setStatus(appStatus, "Logged in. Loading appointments...", "ok");
-  startLiveBookingNotifications();
-  await loadDashboard();
+  const { error } = await supabase.auth.mfa.challengeAndVerify({
+    factorId: pendingMfaSetupFactorId,
+    code
+  });
+
+  if (error) {
+    setStatus(loginStatus, `Authenticator verification failed: ${error.message}`, "error");
+    return;
+  }
+
+  setStatus(loginStatus, "Authenticator linked successfully. Opening dashboard...", "ok");
+  await finishAdminSignIn();
+}
+
+async function handleMfaVerify() {
+  const code = mfaVerifyCode.value.trim();
+  if (!pendingMfaVerifyFactorId) {
+    setStatus(loginStatus, "Authenticator check expired. Please login again.", "error");
+    await cancelMfaFlow();
+    return;
+  }
+  if (!/^\d{6}$/.test(code)) {
+    setStatus(loginStatus, "Enter the 6-digit authenticator code.", "error");
+    return;
+  }
+
+  const { error } = await supabase.auth.mfa.challengeAndVerify({
+    factorId: pendingMfaVerifyFactorId,
+    code
+  });
+
+  if (error) {
+    setStatus(loginStatus, `Authenticator verification failed: ${error.message}`, "error");
+    return;
+  }
+
+  setStatus(loginStatus, "Authenticator verified. Opening dashboard...", "ok");
+  await finishAdminSignIn();
 }
 
 async function handleForgotPassword(event) {
@@ -428,8 +885,8 @@ async function handleForgotPassword(event) {
   const newCooldownUntil = Date.now() + FORGOT_COOLDOWN_SECONDS * 1000;
   localStorage.setItem(FORGOT_COOLDOWN_KEY, String(newCooldownUntil));
   startForgotCooldown(newCooldownUntil);
-  setStatus(loginStatus, "Password reset link sent to your email.", "ok");
-  forgotForm.hidden = true;
+  setStatus(loginStatus, "Password reset link sent. Please check your email.", "ok");
+  showForgotSentView(email);
 }
 
 function startForgotCooldown(cooldownUntil) {
@@ -476,8 +933,11 @@ async function handleResetPassword(event) {
     return;
   }
 
+  await supabase.auth.signOut().catch(() => {});
   setStatus(loginStatus, "Password updated. Please login with new password.", "ok");
-  resetForm.hidden = true;
+  showLoginView();
+  resetForm.reset();
+  emailInput?.focus();
 }
 
 function isRecoveryLink() {
@@ -506,8 +966,7 @@ async function handleRecoveryTokenFromUrl() {
 
   const cleanUrl = `${url.origin}${url.pathname}`;
   window.history.replaceState({}, "", cleanUrl);
-  resetForm.hidden = false;
-  forgotForm.hidden = true;
+  showResetView();
   setStatus(loginStatus, "Recovery verified. Set your new password below.", "ok");
   return true;
 }
@@ -693,6 +1152,63 @@ function closeNoticeModal() {
   noticeModal.hidden = true;
 }
 
+function openTotpConfirmModal(message) {
+  if (totpConfirmMessage) {
+    totpConfirmMessage.textContent = message || "Enter your current 6-digit authenticator code to continue.";
+  }
+  if (totpConfirmCode) {
+    totpConfirmCode.value = "";
+  }
+  totpConfirmModal.hidden = false;
+  totpConfirmCode?.focus();
+}
+
+function closeTotpConfirmModal() {
+  if (totpConfirmCode) {
+    totpConfirmCode.value = "";
+  }
+  totpConfirmModal.hidden = true;
+}
+
+async function verifySensitiveActionTotp(message) {
+  const { factors } = await getMfaState();
+  const verifiedTotpFactors = Array.isArray(factors?.totp) ? factors.totp : [];
+  if (!verifiedTotpFactors.length) {
+    throw new Error("No authenticator is linked to this account.");
+  }
+
+  return new Promise((resolve) => {
+    pendingTotpResolver = async (confirmed) => {
+      if (!confirmed) {
+        resolve(false);
+        return;
+      }
+
+      const code = String(totpConfirmCode?.value || "").trim();
+      if (!/^\d{6}$/.test(code)) {
+        setStatus(appStatus, "Enter the 6-digit authenticator code.", "error");
+        return;
+      }
+
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: verifiedTotpFactors[0].id,
+        code
+      });
+
+      if (error) {
+        setStatus(appStatus, `Authenticator verification failed: ${error.message}`, "error");
+        return;
+      }
+
+      closeTotpConfirmModal();
+      pendingTotpResolver = null;
+      resolve(true);
+    };
+
+    openTotpConfirmModal(message);
+  });
+}
+
 function openSettingsModal() {
   if (!clinicSettings) {
     slotDurationSelect.value = "30";
@@ -710,6 +1226,19 @@ function openSettingsModal() {
       box.checked = weeklyOff.includes(box.value);
     });
   }
+  if (manageUsersSection) {
+    manageUsersSection.hidden = currentAdminProfile?.role !== "dentist";
+  }
+  setManageUsersCollapsed(false);
+  if (currentAdminProfile?.role === "dentist") {
+    loadAccessUsers();
+  }
+  if (addUserForm) {
+    addUserForm.reset();
+    if (newUserRole) {
+      newUserRole.value = "staff";
+    }
+  }
   purgeMonth.value = "";
   purgePassword.value = "";
   settingsModal.hidden = false;
@@ -717,6 +1246,24 @@ function openSettingsModal() {
 
 function closeSettingsModal() {
   settingsModal.hidden = true;
+}
+
+function setCollapseToggleState(button, collapsed, label) {
+  if (!button) {
+    return;
+  }
+  button.textContent = collapsed ? "▾" : "▴";
+  const action = collapsed ? "Expand" : "Collapse";
+  button.setAttribute("aria-label", `${action} ${label}`);
+  button.setAttribute("title", `${action} ${label}`);
+}
+
+function setManageUsersCollapsed(collapsed) {
+  if (!manageUsersContent || !toggleManageUsersBtn) {
+    return;
+  }
+  manageUsersContent.hidden = collapsed;
+  setCollapseToggleState(toggleManageUsersBtn, collapsed, "manage users");
 }
 
 async function hasActiveAppointments(dateYmd) {
@@ -925,6 +1472,166 @@ async function getAccessToken() {
     throw new Error("Session expired. Please login again.");
   }
   return token;
+}
+
+async function handleAddUser(event) {
+  event.preventDefault();
+
+  if (currentAdminProfile?.role !== "dentist") {
+    setStatus(appStatus, "Only dentist can add new users.", "error");
+    showToast("Only dentist can add new users.", "error");
+    return;
+  }
+
+  const fullName = String(newUserName?.value || "").trim();
+  const email = String(newUserEmail?.value || "").trim().toLowerCase();
+  const password = String(newUserPassword?.value || "");
+  const role = String(newUserRole?.value || "staff").trim().toLowerCase();
+
+  if (!email || !password || !["staff", "dentist"].includes(role)) {
+    setStatus(appStatus, "Enter email, temporary password, and a valid role.", "error");
+    showToast("Fill all required user details.", "warn");
+    return;
+  }
+
+  if (password.length < 6) {
+    setStatus(appStatus, "Temporary password must be at least 6 characters.", "error");
+    showToast("Temporary password must be at least 6 characters.", "warn");
+    return;
+  }
+
+  addUserBtn.disabled = true;
+
+  try {
+    const totpVerified = await verifySensitiveActionTotp("Enter your current authenticator code to add this dashboard user.");
+    if (!totpVerified) {
+      setStatus(appStatus, "User creation cancelled.", "warn");
+      showToast("User creation cancelled.", "warn");
+      return;
+    }
+
+    const token = await getAccessToken();
+    const response = await fetch("/api/admin-create-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        fullName,
+        email,
+        password,
+        role
+      })
+    });
+    const rawText = await response.text();
+    let payload = {};
+    try {
+      payload = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      payload = { error: rawText || "" };
+    }
+    if (!response.ok) {
+      setStatus(appStatus, payload.error || "Unable to add user.", "error");
+      showToast(payload.error || "Unable to add user.", "error");
+      return;
+    }
+
+    addUserForm.reset();
+    if (newUserRole) {
+      newUserRole.value = "staff";
+    }
+    setStatus(appStatus, payload.message || "New user created successfully.", "ok");
+    showToast(payload.message || "New user created successfully.", "success");
+    await loadAccessUsers();
+  } catch (error) {
+    setStatus(appStatus, error.message || "Unable to add user.", "error");
+    showToast(error.message || "Unable to add user.", "error");
+  } finally {
+    addUserBtn.disabled = false;
+  }
+}
+
+function renderAccessUsers(users) {
+  if (!userAccessList || !userAccessSummary) {
+    return;
+  }
+
+  const safeUsers = Array.isArray(users) ? users : [];
+  userAccessSummary.textContent = `${safeUsers.length} user${safeUsers.length === 1 ? "" : "s"} currently have dashboard access.`;
+  userAccessList.innerHTML = "";
+
+  if (!safeUsers.length) {
+    const empty = document.createElement("div");
+    empty.className = "user-access-card";
+    empty.textContent = "No dashboard users found.";
+    userAccessList.appendChild(empty);
+    return;
+  }
+
+  safeUsers.forEach((user) => {
+    const card = document.createElement("div");
+    card.className = "user-access-card";
+
+    const name = document.createElement("strong");
+    name.textContent = user.fullName || "Unnamed user";
+
+    const meta = document.createElement("div");
+    meta.className = "user-access-meta";
+
+    const email = document.createElement("span");
+    email.textContent = user.email || "No email";
+
+    const role = document.createElement("span");
+    role.className = "user-role-pill";
+    role.textContent = user.role || "staff";
+
+    meta.appendChild(email);
+    meta.appendChild(role);
+    card.appendChild(name);
+    card.appendChild(meta);
+    userAccessList.appendChild(card);
+  });
+}
+
+async function loadAccessUsers() {
+  if (currentAdminProfile?.role !== "dentist") {
+    return;
+  }
+  if (userAccessSummary) {
+    userAccessSummary.textContent = "Loading users...";
+  }
+  if (userAccessList) {
+    userAccessList.innerHTML = "";
+  }
+
+  try {
+    const token = await getAccessToken();
+    const response = await fetch("/api/admin-list-users", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const rawText = await response.text();
+    let payload = {};
+    try {
+      payload = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      payload = { error: rawText || "" };
+    }
+    if (!response.ok) {
+      throw new Error(payload.error || "Unable to load users.");
+    }
+    renderAccessUsers(payload.users || []);
+  } catch (error) {
+    if (userAccessSummary) {
+      userAccessSummary.textContent = error.message || "Unable to load users.";
+    }
+    if (userAccessList) {
+      userAccessList.innerHTML = "";
+    }
+  }
 }
 
 async function resetPastData() {
@@ -1289,7 +1996,7 @@ function setTimelineCollapsed(collapsed) {
     return;
   }
   timelineContent.hidden = collapsed;
-  toggleTimelineBtn.textContent = collapsed ? "Expand" : "Collapse";
+  setCollapseToggleState(toggleTimelineBtn, collapsed, "day snapshot");
 }
 
 function setAppointmentsCollapsed(collapsed) {
@@ -1297,7 +2004,7 @@ function setAppointmentsCollapsed(collapsed) {
     return;
   }
   appointmentsContent.hidden = collapsed;
-  toggleAppointmentsBtn.textContent = collapsed ? "Expand" : "Collapse";
+  setCollapseToggleState(toggleAppointmentsBtn, collapsed, "appointments");
 }
 
 function setEmergencyBlockCollapsed(collapsed) {
@@ -1305,7 +2012,7 @@ function setEmergencyBlockCollapsed(collapsed) {
     return;
   }
   emergencyBlockContent.hidden = collapsed;
-  toggleEmergencyBlockBtn.textContent = collapsed ? "Expand" : "Collapse";
+  setCollapseToggleState(toggleEmergencyBlockBtn, collapsed, "emergency session blocking");
 }
 
 function setLeaveBlockCollapsed(collapsed) {
@@ -1313,7 +2020,7 @@ function setLeaveBlockCollapsed(collapsed) {
     return;
   }
   leaveBlockContent.hidden = collapsed;
-  toggleLeaveBlockBtn.textContent = collapsed ? "Expand" : "Collapse";
+  setCollapseToggleState(toggleLeaveBlockBtn, collapsed, "holiday and leave blocking");
 }
 
 async function loadTimeline() {
@@ -1538,23 +2245,49 @@ async function init() {
   });
 
   setDefaultDateRange();
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData.session) {
-    const admin = await isAdmin();
-    if (admin) {
-      ensureAlertAudioContext();
-      document.getElementById("authCard").hidden = true;
-      dashboard.hidden = false;
-      startLiveBookingNotifications();
-      await loadDashboard();
-    }
-  }
+  showLoginView();
+  setSelectedLoginRole("dentist");
 
   loginForm.addEventListener("submit", handleLogin);
+  dentistRoleBtn?.addEventListener("click", () => setSelectedLoginRole("dentist"));
+  staffRoleBtn?.addEventListener("click", () => setSelectedLoginRole("staff"));
+  if (mfaSetupVerifyBtn) {
+    mfaSetupVerifyBtn.addEventListener("click", handleMfaSetupVerify);
+  }
+  if (mfaVerifyBtn) {
+    mfaVerifyBtn.addEventListener("click", handleMfaVerify);
+  }
+  if (mfaSetupCancelBtn) {
+    mfaSetupCancelBtn.addEventListener("click", cancelMfaFlow);
+  }
+  if (mfaVerifyCancelBtn) {
+    mfaVerifyCancelBtn.addEventListener("click", cancelMfaFlow);
+  }
+  if (mfaEnrollCode) {
+    mfaEnrollCode.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleMfaSetupVerify();
+      }
+    });
+  }
+  if (mfaVerifyCode) {
+    mfaVerifyCode.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleMfaVerify();
+      }
+    });
+  }
   openSettingsBtn.addEventListener("click", openSettingsModal);
   settingsCancelBtn.addEventListener("click", closeSettingsModal);
   settingsForm.addEventListener("submit", saveClinicSettings);
+  addUserForm?.addEventListener("submit", handleAddUser);
+  refreshUsersBtn?.addEventListener("click", loadAccessUsers);
+  toggleManageUsersBtn?.addEventListener("click", () => {
+    const collapsed = !manageUsersContent || manageUsersContent.hidden;
+    setManageUsersCollapsed(!collapsed);
+  });
   settingsModal.addEventListener("click", (event) => {
     if (event.target === settingsModal) {
       closeSettingsModal();
@@ -1605,28 +2338,39 @@ async function init() {
     fillSlotSelect(manualSlot, manualDate.value || todayYmdInKolkata());
   });
 
-  forgotPasswordBtn.addEventListener("click", () => {
-    forgotForm.hidden = !forgotForm.hidden;
-    resetForm.hidden = true;
-  });
+  forgotPasswordBtn.addEventListener("click", showForgotView);
+  forgotBackBtn?.addEventListener("click", showLoginView);
+  forgotSentBackBtn?.addEventListener("click", showLoginView);
+  forgotTryAgainBtn?.addEventListener("click", showForgotView);
   forgotForm.addEventListener("submit", handleForgotPassword);
   const savedCooldown = Number(localStorage.getItem(FORGOT_COOLDOWN_KEY) || 0);
   if (savedCooldown > Date.now()) {
     startForgotCooldown(savedCooldown);
   }
   resetForm.addEventListener("submit", handleResetPassword);
+  resetBackBtn?.addEventListener("click", showLoginView);
   supabase.auth.onAuthStateChange((eventName) => {
     if (eventName === "PASSWORD_RECOVERY") {
-      resetForm.hidden = false;
-      forgotForm.hidden = true;
+      showResetView();
       setStatus(loginStatus, "Recovery verified. Set your new password below.", "ok");
     }
   });
   const handledTokenRecovery = await handleRecoveryTokenFromUrl();
   if (!handledTokenRecovery && isRecoveryLink()) {
-    resetForm.hidden = false;
-    forgotForm.hidden = true;
+    showResetView();
     setStatus(loginStatus, "Set your new password below.", "ok");
+  } else if (!isRecoveryLink()) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session) {
+      try {
+        await continueAdminAuthFlow({ enforceSelectedRole: false });
+      } catch (sessionError) {
+        setStatus(loginStatus, sessionError.message || "Unable to restore admin session.", "error");
+        await supabase.auth.signOut().catch(() => {});
+        showLoginView();
+        resetMfaState();
+      }
+    }
   }
   quickTabs.forEach((tab) => {
     tab.addEventListener("click", async () => {
@@ -1766,6 +2510,41 @@ async function init() {
       closeNoticeModal();
     }
   });
+  totpConfirmCancel?.addEventListener("click", () => {
+    closeTotpConfirmModal();
+    if (pendingTotpResolver) {
+      const resolver = pendingTotpResolver;
+      pendingTotpResolver = null;
+      resolver(false);
+    }
+  });
+  totpConfirmOk?.addEventListener("click", async () => {
+    if (!pendingTotpResolver) {
+      closeTotpConfirmModal();
+      return;
+    }
+    const resolver = pendingTotpResolver;
+    await resolver(true);
+  });
+  totpConfirmCode?.addEventListener("keydown", async (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (!pendingTotpResolver) {
+        closeTotpConfirmModal();
+        return;
+      }
+      const resolver = pendingTotpResolver;
+      await resolver(true);
+    }
+  });
+  totpConfirmModal?.addEventListener("click", (event) => {
+    if (event.target === totpConfirmModal && pendingTotpResolver) {
+      const resolver = pendingTotpResolver;
+      pendingTotpResolver = null;
+      closeTotpConfirmModal();
+      resolver(false);
+    }
+  });
 
   document.getElementById("applyFilters").addEventListener("click", loadDashboard);
   document.getElementById("resetFilters").addEventListener("click", () => {
@@ -1803,6 +2582,7 @@ async function init() {
 
   document.getElementById("logout").addEventListener("click", async () => {
     await supabase.auth.signOut();
+    currentAdminProfile = null;
     window.location.reload();
   });
 

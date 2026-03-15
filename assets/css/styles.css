@@ -288,6 +288,13 @@ h1 {
   caret-color: transparent;
 }
 
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  caret-color: auto;
+}
+
 .gallery-grid {
   margin-top: 1.1rem;
   display: grid;
@@ -339,6 +346,58 @@ h1 {
   display: flex;
   gap: 0.55rem;
   flex-wrap: wrap;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.collapse-toggle {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.user-access-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.user-access-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.75rem;
+  background: #f8fcfa;
+}
+
+.user-access-card strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.user-access-meta {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.user-role-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #e8f4ee;
+  color: #126848;
+  font-weight: 700;
+  font-size: 0.78rem;
 }
 
 .timeline-grid {
@@ -582,6 +641,101 @@ form {
   display: grid;
   gap: 0.35rem;
   margin-bottom: 0.8rem;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #9ccbb8;
+  box-shadow: 0 0 0 3px rgba(15, 143, 104, 0.12);
+}
+
+.role-switch {
+  display: inline-flex;
+  gap: 0.45rem;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  background: #eef6f1;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+
+.role-switch-btn {
+  border: 0;
+  background: transparent;
+  color: #1e3b2f;
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.role-switch-btn.active {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(15, 143, 104, 0.18);
+}
+
+.mfa-qr-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.9rem;
+  margin: 0.75rem 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #f6fbf8;
+  min-height: 220px;
+}
+
+.mfa-qr-wrap img,
+.mfa-qr-wrap svg {
+  width: min(220px, 100%);
+  height: auto;
+  display: block;
+}
+
+.auth-subflow {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.auth-helper-card {
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #f6fbf8;
+}
+
+.auth-helper-card h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.35rem;
+}
+
+.auth-helper-card p {
+  color: var(--muted);
+  margin-bottom: 0.55rem;
+}
+
+.auth-helper-success {
+  background: #f3fbf6;
+  border-color: #b8dfca;
+}
+
+.auth-helper-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #254338;
+}
+
+.auth-helper-steps li + li {
+  margin-top: 0.25rem;
+}
+
+#mfaSecret[readonly] {
+  caret-color: transparent;
 }
 
 label {
@@ -843,6 +997,9 @@ td {
   border-radius: 16px;
   box-shadow: var(--shadow);
   padding: 1rem;
+  max-height: min(88vh, 860px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .modal-actions {
@@ -1159,6 +1316,21 @@ footer {
     grid-template-columns: 1fr;
   }
 
+  .role-switch {
+    display: flex;
+    width: 100%;
+  }
+
+  .role-switch-btn {
+    flex: 1 1 0;
+    text-align: center;
+  }
+
+  .auth-helper-card {
+    border-radius: 16px;
+    padding: 0.9rem;
+  }
+
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1218,11 +1390,18 @@ footer {
     flex: 1 1 100%;
   }
 
+  .collapse-toggle {
+    width: 42px;
+    min-width: 42px;
+    flex: 0 0 auto;
+  }
+
   .icon-btn {
     width: 100%;
   }
 
   .modal-card {
+    max-height: 90vh;
     padding: 0.85rem;
   }
 
