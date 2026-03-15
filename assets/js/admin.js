@@ -118,9 +118,13 @@ let forgotCooldownTimer = null;
 let clinicSettings = null;
 let slotPickerDraftSelection = new Set();
 let liveBookingChannel = null;
+let liveBookingPollTimer = null;
+let liveAlertPrimed = false;
+const seenLiveAlertAppointmentIds = new Set();
 let alertAudioContext = null;
 const FORGOT_COOLDOWN_SECONDS = 90;
 const FORGOT_COOLDOWN_KEY = "sarvam_forgot_cooldown_until";
+const LIVE_ALERT_POLL_MS = 10000;
 
 function setStatus(el, text, type = "") {
   el.className = `status ${type}`;
@@ -767,22 +771,80 @@ async function findWeeklyOffConflicts(weeklyOffDays, fromDateYmd) {
 }
 
 function startLiveBookingNotifications() {
-  if (liveBookingChannel) {
+  if (liveBookingChannel || liveBookingPollTimer) {
     return;
   }
+
+  primeLiveAlertState().catch(() => {});
   liveBookingChannel = supabase
     .channel("live-booking-alerts")
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "appointments" }, async (payload) => {
-      const row = payload?.new || {};
-      if ((row.status || "Pending") !== "Pending") {
-        return;
-      }
-      const label = `${row.patient_name || "New patient"} requested ${row.preferred_date || ""} ${row.preferred_slot || ""}`.trim();
-      showLiveAlert(`New booking request: ${label}`, "success");
-      playBookingNotificationTone();
-      await loadDashboard();
+      await handleLiveBookingCandidate(payload?.new || {});
     })
     .subscribe();
+
+  liveBookingPollTimer = window.setInterval(() => {
+    pollLiveBookingNotifications().catch(() => {});
+  }, LIVE_ALERT_POLL_MS);
+}
+
+async function fetchRecentLiveAlertCandidates() {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("id, patient_name, preferred_date, preferred_slot, status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(25);
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data || [];
+}
+
+async function primeLiveAlertState() {
+  const rows = await fetchRecentLiveAlertCandidates();
+  rows.forEach((row) => {
+    if (row?.id) {
+      seenLiveAlertAppointmentIds.add(row.id);
+    }
+  });
+  liveAlertPrimed = true;
+}
+
+async function handleLiveBookingCandidate(row) {
+  if (!row?.id) {
+    return;
+  }
+  if (seenLiveAlertAppointmentIds.has(row.id)) {
+    return;
+  }
+  seenLiveAlertAppointmentIds.add(row.id);
+  if (!liveAlertPrimed) {
+    return;
+  }
+  if ((row.status || "Pending") !== "Pending") {
+    return;
+  }
+  const label = `${row.patient_name || "New patient"} requested ${row.preferred_date || ""} ${row.preferred_slot || ""}`.trim();
+  showLiveAlert(`New booking request: ${label}`, "success");
+  playBookingNotificationTone();
+  await loadDashboard();
+}
+
+async function pollLiveBookingNotifications() {
+  const rows = await fetchRecentLiveAlertCandidates();
+  if (!liveAlertPrimed) {
+    rows.forEach((row) => {
+      if (row?.id) {
+        seenLiveAlertAppointmentIds.add(row.id);
+      }
+    });
+    liveAlertPrimed = true;
+    return;
+  }
+  const orderedRows = [...rows].reverse();
+  for (const row of orderedRows) {
+    await handleLiveBookingCandidate(row);
+  }
 }
 
 async function saveClinicSettings(event) {
