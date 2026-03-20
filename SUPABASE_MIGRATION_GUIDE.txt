@@ -3,14 +3,14 @@ SUPABASE MIGRATION + USER ID REMAP GUIDE
 
 Purpose
 -------
-Use this guide when moving Sarvam Dental Clinic from one Supabase project to another, especially when test users are being replaced with real dentist/staff users.
+Use this guide when moving Sarvam Dental Clinic from one Supabase project to another.
 
 Important Truth
 ---------------
-When you create users in a new Supabase project, their `auth.users.id` values (UUIDs) will change.
+When users are created in a new Supabase project, `auth.users.id` values change.
 That is normal.
 
-This affects these columns in the app database:
+This affects app ownership columns such as:
 - public.admin_profiles.user_id
 - public.appointments.approved_by
 - public.appointment_status_history.changed_by
@@ -18,80 +18,62 @@ This affects these columns in the app database:
 - public.blocked_slots.created_by
 - public.clinic_settings.updated_by
 
-Customer booking data itself will still be fine.
-The UUID remap is mainly about preserving admin ownership history.
+Customer appointment records remain usable.
+The remap is mainly about preserving admin ownership history.
 
 Recommended Migration Approach
 ------------------------------
 Use a mapped migration:
-1. Create the new Supabase project.
-2. Apply the schema.
-3. Export/import app data.
-4. Create the new dentist/staff auth users.
-5. Build an old-UUID -> new-UUID mapping table.
-6. Update all admin reference columns using that mapping.
-7. Update hosting environment variables.
-8. Re-test all flows.
+1. create new Supabase project
+2. apply schema
+3. create new auth users
+4. import app data
+5. map old UUIDs to new UUIDs
+6. update env vars and redeploy
+7. re-enroll MFA
 
-Step 1: Prepare Source Project
-------------------------------
-Before migration, collect:
-- Supabase Project URL
-- Supabase anon key
-- Supabase server key / secret key
-- Existing auth user list
-- Existing admin_profiles rows
-- Current hosting env vars
+What To Export / Recreate
+-------------------------
+Schema and config:
+- `supabase/schema.sql`
+- Auth URL Configuration
+- email provider settings
+- TOTP MFA enabled state
 
-Export or note:
+Data:
 - appointments
 - appointment_status_history
 - blocked_dates
 - blocked_slots
 - clinic_settings
-- visitor_events (optional if analytics history is required)
+- visitor_events if analytics history matters
 - admin_profiles
 
-Step 2: Apply Schema to New Project
------------------------------------
-In the new project, run:
-- `supabase/schema.sql`
+Auth and roles:
+- dentist and staff users from Supabase Auth
+- matching `admin_profiles` rows
 
-This creates:
-- tables
-- triggers
-- functions
-- views
-- RLS policies
+Step 1 - Apply Schema
+---------------------
+Run `supabase/schema.sql` in the new project.
 
-Step 3: Create New Auth Users
------------------------------
-Create the real dentist/staff users in the new Supabase project.
-Do this before remapping admin references.
+Step 2 - Create Real Users In New Project
+-----------------------------------------
+Create dentist and staff users in Supabase Auth.
+After creating them, collect their new UUIDs from Authentication -> Users.
 
-Example users:
-- dentist@clinic.com
-- staff1@clinic.com
-- staff2@clinic.com
+Step 3 - Build UUID Mapping
+---------------------------
+Create a private map like this:
 
-After creation, note the new UUIDs from `Authentication -> Users`.
+Old User Email          Old UUID                New User Email          New UUID
+-------------------     -------------------     -------------------     -------------------
+old-dentist@test.com    OLD_DENTIST_UUID        dentist@clinic.com      NEW_DENTIST_UUID
+old-staff@test.com      OLD_STAFF_UUID          staff@clinic.com        NEW_STAFF_UUID
 
-Step 4: Build UUID Mapping
---------------------------
-Create a mapping list like this:
-
-Old Project User                    Old UUID                                 New Project User             New UUID
----------------------------------   ------------------------------------     -------------------------    ------------------------------------
-old-dentist@test.com                OLD_DENTIST_UUID                         dentist@clinic.com           NEW_DENTIST_UUID
-old-staff@test.com                  OLD_STAFF_UUID                           staff1@clinic.com            NEW_STAFF_UUID
-
-Keep this mapping in a private migration note.
-
-Step 5: Import App Data
------------------------
-Import the non-auth table data into the new project.
-Do not assume old UUID references will match. They must be updated after import.
-
+Step 4 - Import Data
+--------------------
+Import non-auth data into the new project.
 Recommended order:
 1. clinic_settings
 2. appointments
@@ -101,11 +83,11 @@ Recommended order:
 6. visitor_events
 7. admin_profiles
 
-Step 6: Remap User IDs Safely
------------------------------
-Run updates for every admin-linked column.
+Step 5 - Remap User IDs
+-----------------------
+Update every admin-linked column using the old->new UUID mapping.
 
-Example pattern:
+Example SQL pattern:
 
 update public.admin_profiles
 set user_id = 'NEW_UUID'
@@ -131,13 +113,11 @@ update public.clinic_settings
 set updated_by = 'NEW_UUID'
 where updated_by = 'OLD_UUID';
 
-Repeat for each mapped user.
+Repeat for each migrated admin user.
 
-Step 7: Verification Queries
-----------------------------
-After remapping, verify that old UUIDs no longer exist in admin-linked columns.
-
-Example checks:
+Step 6 - Verify Old UUIDs Are Gone
+----------------------------------
+Run checks such as:
 
 select * from public.admin_profiles where user_id = 'OLD_UUID';
 select count(*) from public.appointments where approved_by = 'OLD_UUID';
@@ -147,84 +127,70 @@ select count(*) from public.blocked_slots where created_by = 'OLD_UUID';
 select count(*) from public.clinic_settings where updated_by = 'OLD_UUID';
 
 Expected result:
-- admin_profiles returns no old UUID row
-- count queries return 0
+- no remaining old UUID references in these tables
 
-Step 8: Recreate Admin Access
+Step 7 - Recreate Admin Roles
 -----------------------------
-Make sure the real users exist in `public.admin_profiles` with correct roles.
+Ensure the new auth users exist in `public.admin_profiles` with correct roles:
+- dentist -> `dentist`
+- staff -> `staff`
 
-Example:
-- dentist -> role `dentist`
-- staff users -> role `staff`
+Step 8 - Re-enroll MFA
+----------------------
+TOTP authenticators should be set up again in the new Supabase project.
+Treat MFA re-enrollment as a normal migration step.
 
-Verify:
-
-select * from public.admin_profiles order by created_at asc;
-
-Step 9: MFA Reminder
---------------------
-TOTP / authenticator setups do not carry over safely between Supabase projects.
-Ask dentist/staff to re-enroll their authenticator in the new project.
-
-This is expected and should be treated as part of migration.
-
-Step 10: Update Hosting Environment Variables
+Step 9 - Update Hosting Environment Variables
 ---------------------------------------------
-Update these values in the hosting provider:
+Set the new project values in hosting:
 - SUPABASE_URL
 - SUPABASE_ANON_KEY
 - SUPABASE_SERVER_KEY
 
-If legacy fallback is still in use:
+If legacy fallback is still used:
 - SUPABASE_SERVICE_ROLE_KEY
 
-After saving env vars:
-- trigger a fresh redeploy
+Then trigger a fresh deploy.
 
-Step 11: Production Smoke Test
-------------------------------
-Test all of these after migration:
-- customer booking request
-- today past slots hidden
-- weekly off display
-- holiday blocking
-- emergency session blocking
-- approve / reject
-- unblock
-- Book for Patient
-- Control Panel save
-- Manage Users
+Step 10 - Update Supabase Auth URL Configuration
+------------------------------------------------
+Recommended production Site URL:
+- https://sarvamdentalclinic.netlify.app
+
+Recommended Redirect URLs:
+- https://sarvamdentalclinic.netlify.app
+- https://sarvamdentalclinic.netlify.app/doctors-login.html
+- http://localhost:8888/doctors-login.html
+- http://localhost:8889/doctors-login.html
+
+Step 11 - Smoke Test After Migration
+------------------------------------
+- public booking
+- weekly off overlay
+- blocked date/session rules
+- dentist login
+- staff login
+- TOTP setup and verify
 - forgot password
-- admin login with authenticator
-- mobile view
+- reset password
+- approve / reject
+- Day Snapshot
+- Book for Patient
+- Control Panel
+- Manage Users
+- Current Access Users
+- analytics page
+- Back to Dashboard visibility for logged-in admins only
 
-Quick Decision Guide
---------------------
-If this is only a test-to-real migration, do this:
-- create fresh auth users
-- remap UUID references
-- re-enroll MFA
-- update env vars
-
-If history is not important, simpler option:
-- create fresh users
-- keep old ownership fields null or mapped only for dentist
-- preserve appointments but not all actor history
-
-Recommended option for client handover:
-- preserve full mapping where possible
+Old Test Users
+--------------
+If old test users are no longer needed:
+- ban them in Supabase Auth
+- move or clear known DB references
+- if deletion still fails, banning is operationally acceptable
 
 Risk Notes
 ----------
-- Never copy frontend anon key into server-key env var.
-- Never expose server/secret key in browser code.
-- Always verify old UUID references are cleared before deleting old auth users.
-- If auth user deletion fails, the app can still continue safely if the old user is banned and no longer referenced by app tables.
-
-Files To Keep Safe
-------------------
-- supabase/schema.sql
-- HANDSOFF.md
-- DENTIST_APP_REBUILD_BLUEPRINT.txt
-- this file: SUPABASE_MIGRATION_GUIDE.txt
+- Never place the anon key in the server-key env var.
+- Never expose `SUPABASE_SERVER_KEY` in frontend code.
+- TOTP-only login is not the normal Supabase MFA model; keep email/password + TOTP.

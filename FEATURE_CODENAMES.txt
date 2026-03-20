@@ -3,73 +3,98 @@ SARVAM DENTAL CLINIC - FEATURE CODENAMES
 
 1) WASafeConfirm
 Meaning:
-- WhatsApp-dependent workflow where system state must change only after user confirms "Message Sent".
+- WhatsApp-dependent workflow where state changes only after user confirms `Message Sent`.
 
 Used for:
 - approve / reject with notify
-- manual booking notify
-- conflict-driven patient cancellation before blocking
+- Book for Patient notify
+- conflict-driven patient cancellation before block
 - customer requested cancellation during unblock
-
 
 2) SlotGuard
 Meaning:
-- protection against slot conflicts before allowing booking or slot-changing actions.
+- slot conflict protection before allowing booking or slot-changing actions.
 
 Used for:
-- checking already booked / approved slots
-- preventing manual booking on consumed slots
-- guarding against hidden double-booking
-
+- manual booking conflict checks
+- already-booked slot detection
+- blocked slot/day conflict messaging
 
 3) BlockConflict
 Meaning:
-- emergency session blocking flow when approved appointments already exist in the selected slot(s).
+- emergency session blocking conflict flow when approved appointments already exist in chosen slots.
 
 Used for:
-- warning popup with affected patients
-- proceed-anyway logic
-- patient cancellation + notification before final block
-
+- warning popup
+- affected patient listing
+- proceed-anyway path with guarded notification
 
 4) DayOverlay
 Meaning:
-- centered yellow overlay card shown over blurred slot/snapshot grid when a full day is unavailable.
+- centered yellow overlay card shown over blurred slot or snapshot grid when a full day is unavailable.
 
 Used for:
 - customer weekly off display
 - customer blocked day display
-- admin day snapshot weekly off / blocked day display
-
+- admin Day Snapshot weekly off / blocked day display
 
 5) UnblockReasonFlow
 Meaning:
-- fixed unblock reason selection instead of free text, with behavior depending on reason.
+- fixed unblock reasons instead of free text, with conditional workflow depending on reason.
 
 Used for:
-- Customer didnt showup
-- Customer requested cancellation
-
+- customer didnt showup
+- customer requested cancellation
 
 6) LiveDeskAlert
 Meaning:
-- realtime admin alert with sound when a new booking arrives while dashboard is open.
+- realtime or polling admin alert with sound for new bookings while dashboard is open.
 
 Used for:
-- bottom-left popup
+- bottom-left alert
 - sound alert
-- live dashboard refresh
-
+- auto refresh prompt behavior
 
 7) BookingWindowControl
 Meaning:
 - clinic settings logic controlling booking visibility and slot rules.
 
 Used for:
+- slot duration
+- effective date
 - next N days visibility
-- weekly off days
-- slot duration effective date
+- permanent weekly off
 
+8) AdminReturnLink
+Meaning:
+- public-page `Back to Dashboard` shortcut shown only to logged-in dentist/staff sessions.
+
+Used for:
+- recovery when dentist/staff accidentally click out of admin
+- public pages only
+- hidden from customers
+
+9) ControlPanelHistoryGuard
+Meaning:
+- history-state pattern that closes Control Panel on Back before navigating away from dashboard.
+
+Used for:
+- mobile browser Back
+- laptop/browser Back when Control Panel is open
+
+10) InsightBoard
+Meaning:
+- dedicated admin analytics page with infographic-style operational summaries.
+
+Used for:
+- analytics.html
+- bookings trend
+- approval funnel
+- service mix
+- peak time slots
+- weekday demand
+- visits vs bookings
+- blocked capacity
 
 How to quote these in future conversations
 ------------------------------------------
@@ -80,3 +105,6 @@ How to quote these in future conversations
 - "Extend UnblockReasonFlow"
 - "Trigger LiveDeskAlert"
 - "Change BookingWindowControl"
+- "Show AdminReturnLink on this page"
+- "Use ControlPanelHistoryGuard here"
+- "Add this to InsightBoard"

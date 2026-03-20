@@ -1,120 +1,145 @@
 SARVAM DENTAL CLINIC - POST LAUNCH MAINTENANCE + BACKUP GUIDE
-==============================================================
+=============================================================
 
-1) CORE ASSETS TO BACK UP
--------------------------
-- GitHub repository (source of truth):
+1) SOURCE OF TRUTH
+------------------
+- GitHub repository:
   https://github.com/rameshdhv/svc
-- Supabase project details:
-  - Project URL
-  - Anon key
-  - Service role/secret key (server-side only)
-- Netlify site:
-  - Site ID, site name, production URL
-  - Environment variables
-- Twilio config (if enabled in future):
-  - Account SID
-  - Auth token
-  - WhatsApp sender/from number
+- Production site:
+  https://sarvamdentalclinic.netlify.app/
+- Supabase project
+- Netlify site configuration
 
-Recommended: keep these in a private password manager + private ops doc.
+Keep GitHub as the primary code source of truth.
 
+2) WHAT TO BACK UP
+------------------
+Repository and docs:
+- README.md
+- HANDSOFF.md
+- DENTIST_APP_REBUILD_BLUEPRINT.txt
+- SUPABASE_MIGRATION_GUIDE.txt
+- HOSTING_DEPLOYMENT_GUIDE.txt
+- FEATURE_CODENAMES.txt
+- supabase/schema.sql
+- netlify.toml
 
-2) MINIMUM DOCUMENTS TO KEEP IN REPO
-------------------------------------
-- README.md (quick setup)
-- HANDSOFF.md (project context and architecture)
-- DENTIST_APP_REBUILD_BLUEPRINT.txt (full rebuild spec)
-- supabase/schema.sql (DB schema + RLS)
-- netlify.toml (deploy/runtime config)
-- .env.example (required env variables list)
+Secrets and platform settings:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- SUPABASE_SERVER_KEY
+- SUPABASE_SERVICE_ROLE_KEY only if legacy fallback is still used
+- Netlify site settings
+- Supabase Auth URL Configuration
 
+Optional future WhatsApp data if Twilio is enabled later:
+- TWILIO_ACCOUNT_SID
+- TWILIO_AUTH_TOKEN
+- TWILIO_WHATSAPP_FROM
 
-3) BEFORE MAKING ANY CHANGE REQUEST
------------------------------------
-1. Pull latest code:
-   git pull
-2. Run local:
-   npm install
-   npx netlify dev --port 8888 --staticServerPort 4001
-3. Verify main pages:
-   - /index.html
-   - /gallery.html
-   - /doctors-login.html
-4. Create a branch for change:
-   git checkout -b feature/<short-change-name>
+3) SAFE CHANGE WORKFLOW
+-----------------------
+1. pull latest code
+2. run local dev
+3. verify booking and admin flows
+4. make change
+5. test on desktop and mobile
+6. push to GitHub
+7. let Netlify deploy
+8. smoke test production
 
+Preferred local run:
+- npm install
+- npx netlify dev --port 8889 --staticServerPort 4002
 
-4) DEPLOY WORKFLOW (SAFE)
--------------------------
-1. Implement + test locally.
-2. Commit and push to GitHub.
-3. Netlify auto deploys from main (or deploy preview branch first).
-4. Smoke test production:
-   - booking form submit
-   - booking window limit and weekly off behavior
-   - today past slot hiding behavior
-   - admin login
-   - emergency session blocking via Select Sessions popup
-   - approve/reject/unblock
-   - settings save (duration/visibility/weekly off)
-   - reset past data with password
-   - mobile layout check
+Alternative if ports are free:
+- npx netlify dev --port 8888 --staticServerPort 4001
 
-
-5) WHAT TO BACK UP REGULARLY
-----------------------------
-Weekly:
-- GitHub repo (already versioned)
-- Supabase schema export (SQL)
-- Netlify env vars snapshot (keys list + values in secure vault)
-
-Monthly:
-- Supabase data export (appointments, status history, blocked dates/slots, visitor events)
-
-
-6) IF DENTIST ASKS FOR CHANGES
+4) SMOKE TEST AFTER ANY CHANGE
 ------------------------------
-Use this checklist:
-- Is this UI only, workflow, DB schema, or auth/security change?
-- Will it affect existing appointments/status logic?
-- Does it affect mobile only or all devices?
-- Any new external dependency (WhatsApp API, payment, maps, etc.)?
+Public:
+- home, services, gallery load
+- booking request works
+- same-day expired slots hide
+- weekly off overlay works
+- blocked date/session behavior works
 
-Then estimate and implement in this order:
-1. UI changes (safe)
-2. Logic changes
-3. Schema changes (with migration)
-4. Production deploy + verification
+Admin:
+- dentist login
+- staff login
+- TOTP flow
+- forgot password / reset password
+- Day Snapshot
+- approve / reject
+- Book for Patient
+- Control Panel open/close on desktop and mobile
+- Control Panel Back-button close behavior on mobile/browser
+- Manage Users
+- Current Access Users
+- analytics page
+- Back to Dashboard visible only for logged-in admins
 
+5) IF DENTIST REQUESTS CHANGES
+------------------------------
+Classify the request first:
+- UI only
+- workflow logic
+- auth/security
+- schema/data
+- hosting/deployment
 
-7) INCIDENT RECOVERY PLAN
--------------------------
-If site breaks after deployment:
-1. Roll back to previous Netlify deploy.
-2. Revert latest Git commit on main.
-3. Restore last known good env vars.
-4. Re-test booking + admin flows.
+Then ask:
+- all devices or one device only?
+- will it affect live appointments?
+- does it require backend changes?
 
+6) MONTHLY / PERIODIC TASKS
+---------------------------
+Monthly:
+- export critical Supabase data if business wants backups
+- verify active users list
+- verify dentist/staff accounts still correct
+- verify reset-password links still route correctly
+
+When auth or hosting changes:
+- recheck Supabase Auth URL Configuration
+- recheck Netlify env vars
+- trigger fresh deploy
+
+7) INCIDENT RECOVERY
+--------------------
+If something breaks in production:
+1. roll back to previous Netlify deploy
+2. revert latest Git commit if needed
+3. verify env vars were not changed incorrectly
+4. retest booking + admin flows
 
 8) SECURITY PRACTICES
 ---------------------
-- Never commit secret keys in frontend code.
-- Keep service role/secret key only in Netlify env.
-- Keep Supabase anon key in Netlify env as well (required for server-side password verification flow in reset function).
-- Rotate keys if shared accidentally.
-- Use strong admin passwords and minimal admin accounts.
+- never expose server key in frontend code
+- keep backend-only actions in serverless/API layer
+- do not rely on hidden links for security; auth and role checks are the real protection
+- keep dentist/staff accounts limited to real users
+- if an old test auth user cannot be deleted cleanly, banning the user is acceptable until a later cleanup
 
+9) DOCUMENTS TO UPDATE AFTER MAJOR CHANGES
+------------------------------------------
+Update these whenever meaningful features change:
+- HANDSOFF.md
+- README.md
+- DENTIST_APP_REBUILD_BLUEPRINT.txt
+- SUPABASE_MIGRATION_GUIDE.txt
+- HOSTING_DEPLOYMENT_GUIDE.txt
+- FEATURE_CODENAMES.txt
 
-9) QUICK COMMANDS
------------------
-Local run:
-  npx netlify dev --port 8888 --staticServerPort 4001
+10) QUICK GIT COMMANDS
+----------------------
+Commit and push:
+- git add .
+- git commit -m "<message>"
+- git push
 
-Git push:
-  git add .
-  git commit -m "change: <message>"
-  git push
-
-Production URL:
-  https://sarvamdentalclinic.netlify.app/
+Current production URLs:
+- Main site: https://sarvamdentalclinic.netlify.app/
+- Admin: https://sarvamdentalclinic.netlify.app/doctors-login.html
+- Analytics: https://sarvamdentalclinic.netlify.app/analytics.html

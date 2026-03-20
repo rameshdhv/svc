@@ -1,143 +1,176 @@
-DENTIST APP REBUILD BLUEPRINT (NO-QUESTIONS VERSION)
-====================================================
+DENTIST APP REBUILD BLUEPRINT (CURRENT STATE)
+=============================================
 
 Purpose
 -------
-Recreate the same Sarvam Dental Clinic website + admin dashboard end-to-end without additional requirement gathering.
+Use this file to recreate the same Sarvam Dental Clinic website and admin system without re-gathering requirements.
 
-Brand + Clinic Data
--------------------
-- Clinic name: Sarvam Dental Clinic
-- Public phone on website: 8328010083
-- Timezone: Asia/Kolkata
-- Hours: 10:30 to 18:30
-- Services currently: Teeth Cleaning, Root Canal, Braces
-
-Core Product Scope
-------------------
-1) Public website:
-   - Modern landing page with hero + treatment room image.
-   - Services section with more detail and small clip-art style icons.
-   - Booking section with patient form and slot picker.
-   - About Us and Locate Us blocks.
-   - Google map support via Show Map / Open in Google Maps.
-   - Gallery page for before/after treatment images.
-
-2) Admin dashboard (doctors login route only):
-   - Dentist/staff role switch at login.
-   - Email+password login via Supabase Auth.
-   - TOTP authenticator setup and verify flow.
-   - Forgot password flow with clear email-sent and reset-password states.
-   - Manage appointment statuses.
-   - Filters + analytics cards.
-   - Day snapshot view (compact, collapsible).
-   - Emergency session blocking.
-   - Holiday range blocking.
-   - Book for Patient by staff.
-   - Control Panel for slot behavior, user management, and maintenance actions.
-
-Pages + Routing
+Clinic Identity
 ---------------
-- /index.html            (public)
-- /gallery.html          (public)
-- /doctors-login.html    (private/admin)
-- /admin.html            (redirect helper to doctors login)
+- Clinic name: Sarvam Dental Clinic
+- Public phone: 8328010083
+- Timezone: Asia/Kolkata
+- Hours: 10:30 AM to 6:30 PM
+- Services: Teeth Cleaning, Root Canal, Braces
 
-Hide admin from customers
--------------------------
-- Do not show doctors login link in public navigation.
-- Access admin directly by URL only.
+Product Scope
+-------------
+1. Public website
+   - clean modern landing page
+   - treatment-room hero image
+   - detailed services section with small visual icons
+   - gallery page for before/after treatments
+   - booking form with slot selection
+   - About Us and Locate Us
 
-Booking Behavior Rules
-----------------------
-- Slot interval configurable from settings (30 or 60 min).
-- Customer may book only in next N days (N configurable).
-- Same-day past slots are hidden automatically.
-- Weekly off days disable booking.
-- Blocked date ranges disable booking.
-- Blocked sessions disable booking.
-- Approved appointment consumes slot for that date/time.
-- Weekly off / fully blocked day should use centered yellow overlay over blurred disabled slots.
-- After successful booking request, keep customer on selected booking date and show centered success modal.
+2. Private admin dashboard
+   - dentist/staff login
+   - Supabase email + password + TOTP
+   - password reset and confirmation resend flow
+   - Day Snapshot
+   - appointment management
+   - holiday/session blocking
+   - Book for Patient
+   - Control Panel
+   - Manage Users
+   - analytics insights page
 
-Appointment Lifecycle
----------------------
-- Pending -> Approved / Rejected -> Completed / No-show
-- Approved can be unblocked with mandatory reason.
-- On approve/reject: temporary WhatsApp redirect message flow.
-- Notes/status trail should reflect actor role:
+Required Pages
+--------------
+- /index.html
+- /gallery.html
+- /doctors-login.html
+- /analytics.html
+- /admin.html (redirect helper)
+
+Public Booking Rules
+--------------------
+- Slot interval controlled by settings: 30 or 60 minutes.
+- Booking window limited to next N days from settings.
+- Same-day expired slots hidden automatically.
+- Approved slots unavailable.
+- Weekly off closes booking.
+- Blocked date ranges close booking.
+- Blocked sessions close booking.
+- Full-day unavailable state uses centered yellow overlay over blurred disabled slots.
+- Successful booking stays on selected date and shows centered modal.
+
+Admin Login Rules
+-----------------
+- Role switch UI: Login as Dentist / Login as Staff.
+- Standard login flow: email + password + authenticator code.
+- TOTP setup required for admin access.
+- Forgot-password uses email recovery link.
+- Recovery link should lead to dedicated reset form before normal dashboard flow resumes.
+- Resend Confirmation Link should live in email-related recovery states, not on the base login screen.
+
+Dashboard Rules
+---------------
+- Appointment lifecycle:
+  Pending -> Approved / Rejected -> Completed / No-show
+- Approved future appointments can be unblocked.
+- Action notes must record actor role, for example:
   - Booked by staff
   - Approved by dentist
   - Rejected by staff
-  - Unblocked by dentist: <reason>
+  - Unblocked by dentist: customer requested cancellation
+- Day Snapshot is collapsible.
+- Appointments section is collapsible.
+- Emergency Session Blocking is collapsible.
+- Holiday / Leave Blocking is collapsible.
+- On mobile, Day Snapshot open by default, other collapsible dashboard sections closed by default.
 
-WhatsApp behavior (current)
----------------------------
-- No direct API dependency required for now.
-- Open prefilled wa.me URL on status changes/manual booking.
-- Keep structure ready to plug Twilio API later.
-- Use guarded confirmation workflow: state changes only finalize after user clicks `Message Sent`.
+Control Panel Rules
+-------------------
+- Visible label: Control Panel.
+- Dashboard button text should also be Control Panel.
+- Modal must scroll internally on all devices.
+- Modal must have top-right close button.
+- Browser/mobile Back should close Control Panel before leaving dashboard.
+- Staff must not see Reset Past Data.
 
-Admin Settings Requirements
----------------------------
-- Slot duration (30 / 60 mins).
-- Effective date for duration change.
-- Validation: do not allow duration change if active appointments exist on effective date.
-- Booking window days input (e.g., 10).
-- Permanent weekly holidays (checkbox list Sunday-Saturday).
-- Validation: weekly holidays must NOT save if any future Pending/Approved appointments fall on those weekdays.
-- Reset past data (by cutoff month) from settings:
-  - confirmation prompt
-  - admin password confirmation required
-  - run via secure Netlify Function using service role key
-- Rename visible settings surface to `Control Panel`
-- Staff must not see high-privilege maintenance actions like `Reset Past Data`
+Control Panel Sections
+----------------------
+- slot duration
+- effective from date
+- show slots for next N days
+- permanent weekly off
+- Manage Users
+- Current Access Users
+- Reset Past Data (dentist only)
 
-User Management Requirements
-----------------------------
-- Dentist can create dashboard users from Control Panel without opening Supabase.
-- Show current access users:
+Manage Users
+------------
+- Dentist can create new dashboard users without opening Supabase.
+- Add-user flow uses secure backend route.
+- Add-user requires fresh TOTP confirmation before user creation.
+- Show Current Access Users list with:
   - total count
   - full name
   - email
   - role
-- Add-user flow must run through secure backend endpoint.
-- Add-user flow must require fresh TOTP confirmation before creation.
-- Use server-side key only on backend function, never in browser.
 
-Emergency Blocking UX
----------------------
-- Must support reliable bulk selection on all devices.
-- Use dedicated modal picker with clickable slot chips.
-- Controls: Select All, Clear, Apply, Cancel.
-- Save selected sessions in one operation.
-- If blocking conflicts with approved appointment(s), warn first.
-- If proceeding anyway, notify affected patient(s) through guarded WhatsApp flow and only then finalize cancellation + block.
+WhatsApp Behavior
+-----------------
+- Current implementation uses redirect-based WhatsApp drafts, not API delivery verification.
+- State changes finalize only after user confirms Message Sent.
+- This guarded behavior applies to:
+  - approve / reject notify
+  - Book for Patient notify
+  - conflict-driven cancellation before session block
+  - customer requested cancellation during unblock
 
-Realtime Dentist Notification
------------------------------
-When dashboard is open and new appointment is inserted:
-- Show bottom-left alert toast with patient/date/slot summary.
-- Play short notification sound.
-- Auto-refresh dashboard data.
+Conflict and Blocking Rules
+---------------------------
+- Weekly holidays cannot save if future Pending/Approved appointments exist on those weekdays.
+- Session blocking supports multi-select through modal slot picker.
+- If approved bookings already exist in a slot being blocked, warn first.
+- Proceed-anyway path must notify affected patient(s) before finalizing cancellation and block.
+- Manual booking conflicts must show centered popup and distinguish:
+  - already booked slot
+  - blocked slot or blocked day with reason
+- Unblock reasons are fixed options:
+  - customer didnt showup
+  - customer requested cancellation
 
-Analytics (industry practical set)
-----------------------------------
-- Page visits
-- Total bookings
-- Pending count
-- Approval rate
+Realtime and Alerts
+-------------------
+- When admin dashboard is open and a new booking arrives:
+  - show bottom-left alert
+  - play short sound
+  - refresh data
+- Use Supabase realtime if available.
+- Keep polling fallback for reliability.
 
-Security + Compliance Decisions
--------------------------------
-- Dentist/staff auth through Supabase email+password.
-- Password reset handled from login page flow with clear recovery UI.
-- TOTP MFA required for admin access.
-- RLS enforced for admin data actions.
-- Secrets only in Netlify env vars; never frontend.
+Analytics Requirements
+----------------------
+Dashboard cards:
+- page visits
+- bookings
+- pending
+- approval rate
 
-Supabase Tables (minimum)
--------------------------
+Dedicated analytics page:
+- open from dashboard with `View Insights ?`
+- admin-only page
+- show operational infographic-style insights:
+  - Bookings Trend
+  - Approval Funnel
+  - Service Mix
+  - Peak Time Slots
+  - Weekday Demand
+  - Visits vs Bookings
+  - Blocked Capacity
+  - Insight Notes
+
+Public Admin Recovery Convenience
+---------------------------------
+- Public pages must show `Back to Dashboard` only when current session belongs to dentist/staff.
+- Customers must never see it.
+- This is a convenience link only and must not bypass auth.
+
+Supabase Tables
+---------------
 - appointments
 - appointment_status_history
 - admin_profiles
@@ -146,41 +179,27 @@ Supabase Tables (minimum)
 - blocked_slots
 - clinic_settings
 
-Admin Authorization Model
+Important Supabase Fields
 -------------------------
-- User must exist in auth.users.
-- User must be present in public.admin_profiles with role (dentist/staff).
-- Existing schema fields reused for audit-style UI:
-  - `appointments.status_note`
-  - `appointments.approved_by`
-  - `appointment_status_history.changed_by`
+- admin_profiles.user_id
+- admin_profiles.role
+- appointments.approved_by
+- appointments.status_note
+- appointment_status_history.changed_by
+- blocked_dates.created_by
+- blocked_slots.created_by
+- clinic_settings.updated_by
 
-Design + Responsive Expectations
---------------------------------
-- Desktop/tablet should remain polished and content-rich.
-- Mobile should avoid long continuous pages where possible.
-- Mobile booking slots should be compact grid.
-- Admin timeline should be compact on mobile.
-- Keep clean, non-cluttered UI.
-- On mobile admin:
-  - Day Snapshot open by default
-  - other collapsible sections collapsed by default
+Security Model
+--------------
+- Supabase email/password + TOTP.
+- TOTP is second factor, not password replacement.
+- Backend-only admin actions use server key in serverless function.
+- Never expose backend key to browser.
 
-Control Panel / Collapse UX
----------------------------
-- Use chevron up/down toggle buttons instead of text `Collapse/Expand` where practical.
-- Apply same collapse pattern across dashboard sections and Manage Users subsection.
-- Control Panel modal itself must scroll internally on all devices.
-
-Deployment Model
-----------------
-- Host on Netlify.
-- Supabase as backend.
-- Works both in production and local development.
-- Keep backend contract portable so equivalent API routes can be reimplemented on Vercel/Hostinger/GoDaddy with backend support.
-
-Backend Endpoints Required
---------------------------
+Backend API Contract
+--------------------
+Keep these routes stable even if hosting provider changes:
 - /api/admin-create-user
 - /api/admin-list-users
 - /api/reset-past-data
@@ -192,32 +211,43 @@ Frontend/runtime:
 - SUPABASE_ANON_KEY
 
 Server-side:
-- SUPABASE_SERVER_KEY (preferred)
-- SUPABASE_SERVICE_ROLE_KEY (legacy fallback only)
+- SUPABASE_SERVER_KEY preferred
+- SUPABASE_SERVICE_ROLE_KEY legacy fallback
 
-Local Dev Commands
-------------------
-npm install
-npx netlify dev --port 8888 --staticServerPort 4001
+Local Development
+-----------------
+Preferred local run:
+- npm install
+- npx netlify dev --port 8889 --staticServerPort 4002
 
-Operational Checklist Before Demo
----------------------------------
-1. Customer booking works.
-2. Approve/reject works.
-3. Unblock reason is enforced.
-4. Weekly holiday conflict prevention works.
-5. Realtime alert + sound works.
-6. Emergency bulk blocking works.
-7. Dentist/staff role login works.
-8. Add User works from Control Panel.
-9. Current Access Users list loads.
-10. Password reset flow works.
-11. Mobile layout sanity check done.
+Alternative if ports are free:
+- npx netlify dev --port 8888 --staticServerPort 4001
 
-Git + Handoff Discipline
------------------------
-- Keep HANDSOFF.md updated after major behavior changes.
-- Keep MAINTENANCE_BACKUP_GUIDE.txt updated for deploy/ops changes.
-- Keep SUPABASE_MIGRATION_GUIDE.txt updated if auth/admin ownership rules change.
-- Keep HOSTING_DEPLOYMENT_GUIDE.txt updated if serverless/backend hosting rules change.
-- Use this blueprint file as exact spec if rebuilding from scratch.
+Validation Checklist
+--------------------
+1. customer booking works
+2. selected date remains after booking
+3. weekly off overlay works
+4. blocked-day overlay works
+5. dentist login works
+6. staff login works
+7. TOTP enrollment and verify work
+8. forgot password / reset flow works
+9. Day Snapshot loads
+10. approve / reject / unblock work
+11. Book for Patient works
+12. Manage Users works
+13. Current Access Users list works
+14. Control Panel close button and mobile Back behavior work
+15. Back to Dashboard appears only for logged-in admins
+16. analytics page loads and reflects data
+
+Documentation Discipline
+------------------------
+Keep these files updated after meaningful feature changes:
+- HANDSOFF.md
+- README.md
+- SUPABASE_MIGRATION_GUIDE.txt
+- HOSTING_DEPLOYMENT_GUIDE.txt
+- MAINTENANCE_BACKUP_GUIDE.txt
+- FEATURE_CODENAMES.txt

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gait Physio Clinic | Book Physiotherapy Session</title>
+  <meta name="description" content="Gait Physio Clinic offers evidence-based physiotherapy care in Whitefield. Book your session online." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=1" />
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="logo" id="clinicName">Gait Physio Clinic</div>
+      <nav class="nav-links" aria-label="Primary">
+        <a class="nav-link active" href="#home" data-mobile-section="home">Home</a>
+        <a class="nav-link" href="#services" data-mobile-section="services">Services</a>
+        <a class="nav-link" href="#book" data-mobile-section="book">Book</a>
+      </nav>
+      <div class="nav-actions">
+        <a id="adminReturnLink" class="btn secondary admin-return-link" href="./doctors-login.html" hidden>Back to Dashboard</a>
+        <a class="cta-call" href="tel:+918328010083">Call: 8328010083</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero" id="home">
+      <article class="card hero-card physio-hero-card">
+        <span class="eyebrow">Movement Recovery</span>
+        <h1>Restore movement, reduce pain, and book physio sessions with confidence.</h1>
+        <p class="lead">From everyday aches to post-operative rehabilitation, Gait Physio Clinic helps patients move better with guided, goal-based care. Available slots are shown in green. Approved slots are shown in grey.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#book" data-mobile-section="book">Book Appointment</a>
+          <a class="btn secondary dial" href="tel:+918328010083">Talk to Clinic</a>
+        </div>
+      </article>
+      <aside class="hero-media" aria-label="Physiotherapy treatment session">
+        <img
+          src="./assets/images/musculoskeletal-physiotherapy.png"
+          alt="Physiotherapy session focused on guided movement recovery"
+          loading="eager"
+        />
+      </aside>
+    </section>
+
+    <section class="section" id="services">
+      <h2>Common Physiotherapy Services</h2>
+      <p class="lead">Choose the concern closest to your need, or select General if you want the therapist to guide you after assessment.</p>
+      <div class="services services-detailed physio-services-grid" style="margin-top: 12px;">
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/musculoskeletal-physiotherapy.png" alt="Musculoskeletal Physiotherapy" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">MS</span>
+            <h3>Musculoskeletal Physiotherapy</h3>
+          </div>
+          <p class="lead">Targeted care for back pain, neck stiffness, joint strain, posture issues, and movement restrictions.</p>
+          <ul class="service-points">
+            <li>Back, neck, and shoulder pain care</li>
+            <li>Joint mobility restoration</li>
+            <li>Posture and movement correction</li>
+          </ul>
+        </article>
+
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/sports-physiotherapy.png" alt="Sports Physiotherapy" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">SP</span>
+            <h3>Sports Physiotherapy</h3>
+          </div>
+          <p class="lead">Performance-focused rehab for athletes and active adults recovering from sprains, strains, or overuse injuries.</p>
+          <ul class="service-points">
+            <li>Sports injury assessment</li>
+            <li>Strength and return-to-play plans</li>
+            <li>Injury prevention guidance</li>
+          </ul>
+        </article>
+
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/neurological-physiotherapy.png" alt="Neurological Physiotherapy" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">NP</span>
+            <h3>Neurological Physiotherapy</h3>
+          </div>
+          <p class="lead">Structured therapy support for balance, coordination, gait, and functional recovery after neurological conditions.</p>
+          <ul class="service-points">
+            <li>Stroke and neuro rehab support</li>
+            <li>Balance and gait training</li>
+            <li>Functional movement progression</li>
+          </ul>
+        </article>
+
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/geriatric-physiotherapy.png" alt="Geriatric Physiotherapy" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">GP</span>
+            <h3>Geriatric Physiotherapy</h3>
+          </div>
+          <p class="lead">Safe, supportive physiotherapy for seniors dealing with pain, weakness, balance issues, or recovery after illness.</p>
+          <ul class="service-points">
+            <li>Fall-risk reduction</li>
+            <li>Mobility and balance support</li>
+            <li>Strength for daily activity independence</li>
+          </ul>
+        </article>
+
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/paediatric-physiotherapy.png" alt="Paediatric Physiotherapy" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">PP</span>
+            <h3>Paediatric Physiotherapy</h3>
+          </div>
+          <p class="lead">Child-friendly movement therapy focusing on posture, motor development, coordination, and functional play.</p>
+          <ul class="service-points">
+            <li>Motor milestone support</li>
+            <li>Coordination and posture care</li>
+            <li>Play-based therapy approach</li>
+          </ul>
+        </article>
+
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/womens-health-physiotherapy.png" alt="Women's Health Physiotherapy" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">WH</span>
+            <h3>Women's Health Physiotherapy</h3>
+          </div>
+          <p class="lead">Confidential physiotherapy care for women�s mobility, pelvic health, and recovery needs across life stages.</p>
+          <ul class="service-points">
+            <li>Prenatal and postnatal support</li>
+            <li>Pelvic floor guidance</li>
+            <li>Pain and movement recovery plans</li>
+          </ul>
+        </article>
+
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/vestibular-rehabilitation.png" alt="Vestibular Rehabilitation" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">VR</span>
+            <h3>Vestibular Rehabilitation</h3>
+          </div>
+          <p class="lead">Specialized exercises to improve dizziness, balance disturbances, and movement confidence.</p>
+          <ul class="service-points">
+            <li>Balance retraining</li>
+            <li>Dizziness-focused rehab</li>
+            <li>Functional confidence building</li>
+          </ul>
+        </article>
+
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/post-operative-rehabilitation.png" alt="Post-Operative Rehabilitation" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">PR</span>
+            <h3>Post-Operative Rehabilitation</h3>
+          </div>
+          <p class="lead">Guided recovery plans to rebuild mobility, strength, and movement confidence after surgery.</p>
+          <ul class="service-points">
+            <li>Joint and soft-tissue recovery</li>
+            <li>Mobility restoration plans</li>
+            <li>Progressive strength rebuilding</li>
+          </ul>
+        </article>
+
+        <article class="mini service-detail-card physio-service-card">
+          <img class="service-photo" src="./assets/images/pain-management-physiotherapy.png" alt="Pain Management Physiotherapy" loading="lazy" />
+          <div class="service-head">
+            <span class="service-icon" aria-hidden="true">PM</span>
+            <h3>Pain Management Physiotherapy</h3>
+          </div>
+          <p class="lead">Movement-based pain management plans that reduce stiffness, improve tolerance, and support long-term relief.</p>
+          <ul class="service-points">
+            <li>Chronic pain support</li>
+            <li>Movement pacing strategies</li>
+            <li>Functional recovery planning</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="book">
+      <h2>Book Appointment</h2>
+      <p class="lead">Submit your request. Status starts as Pending, and clinic staff will review and confirm the session from the dashboard.</p>
+
+      <div class="mobile-book-switch" aria-label="Mobile booking view switch">
+        <button type="button" class="mobile-switch-btn active" data-mobile-book-view="form">Appointment Form</button>
+        <button type="button" class="mobile-switch-btn" data-mobile-book-view="info">Clinic Info</button>
+      </div>
+
+      <div class="booking-grid">
+        <div class="booking-side" id="bookInfoPanel">
+          <div class="details physio-details-card">
+            <h3 style="font-size:1.5rem;">Need help?</h3>
+            <p>For urgent pain, stiffness, or movement concerns, call the clinic directly.</p>
+            <ul>
+              <li>Phone: <a class="dial" href="tel:+918328010083">8328010083</a></li>
+              <li>WhatsApp confirmation after approval</li>
+              <li>Timezone: Asia/Kolkata</li>
+            </ul>
+          </div>
+
+          <article class="card info-card" id="about-us">
+            <h3>About Us</h3>
+            <p class="lead">
+              Gait Physio Clinic focuses on pain relief, movement restoration, and practical rehabilitation plans for daily life.
+              Every session is guided with assessment-led care, clear communication, and realistic progress goals for each patient.
+            </p>
+          </article>
+
+          <article class="card info-card" id="locate-us">
+            <h3>Locate Us</h3>
+            <p class="lead">Shop No:26, 2nd Floor, Arya Hub Mall, Hope Farm Signal, Prasanth Extension, Whitefield, Bengaluru, Karnataka 560066</p>
+            <div class="inline-actions">
+              <button id="showMapBtn" type="button" class="btn">Show Map</button>
+              <a
+                class="btn secondary"
+                href="https://share.google/uM2wY4rZLopqPJP44"
+                target="_blank"
+                rel="noopener">
+                Open in Google Maps
+              </a>
+            </div>
+            <div id="mapWrap" class="map-wrap" hidden>
+              <iframe
+                title="Gait Physio Clinic Map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                src="https://www.google.com/maps?q=Shop+No+26,+2nd+Floor,+Arya+Hub+Mall,+Hope+Farm+Signal,+Prasanth+Extension,+Whitefield,+Bengaluru,+Karnataka+560066&output=embed">
+              </iframe>
+            </div>
+          </article>
+        </div>
+
+        <form id="appointmentForm" novalidate>
+          <div class="row">
+            <div class="field">
+              <label for="name">Full Name</label>
+              <input id="name" name="name" required placeholder="Patient name" />
+            </div>
+            <div class="field">
+              <label for="phone">Mobile Number</label>
+              <input id="phone" name="phone" type="tel" required pattern="[0-9]{10}" placeholder="10-digit number" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="date">Preferred Date</label>
+              <input id="date" name="date" type="date" required />
+            </div>
+            <div class="field">
+              <label for="service">Service</label>
+              <select id="service" name="service" required>
+                <option value="">Select service</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field slot-wrap">
+            <label>Available Slots</label>
+            <div class="slot-state-wrap" id="slotStateWrap">
+              <div id="slots" class="slot-grid" aria-live="polite"></div>
+              <div id="blockedNotice" class="status warn" style="display:none;" aria-live="polite"></div>
+            </div>
+            <input id="selectedSlot" name="selectedSlot" type="hidden" required />
+            <small id="selectedSlotText">No slot selected</small>
+          </div>
+
+          <div class="field">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" placeholder="Describe the pain, injury, or movement concern"></textarea>
+          </div>
+
+          <button type="submit" class="btn" style="width:100%;">Request Appointment</button>
+          <div class="status" id="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="#about-us" id="aboutLink">About Us</a>
+        <a href="#locate-us" id="locateLink">Locate Us</a>
+      </div>
+      <div>&copy; <span id="year"></span> Gait Physio Clinic</div>
+    </div>
+  </footer>
+
+  <div id="bookingSuccessModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bookingSuccessTitle">
+      <h3 id="bookingSuccessTitle">Request Submitted</h3>
+      <p id="bookingSuccessMessage" class="lead" style="margin-top:6px;">Appointment request submitted. Clinic will review and confirm on WhatsApp.</p>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button id="bookingSuccessOk" type="button" class="btn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastRoot" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="./assets/js/main.js?v=1"></script>
+</body>
+</html>

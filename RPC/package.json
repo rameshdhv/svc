@@ -1,0 +1,13 @@
+{
+  "name": "gait-physio-clinic",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx netlify dev --dir . --functions netlify/functions --port 8890 --staticServerPort 4003",
+    "netlify:dev": "npx netlify dev --dir . --functions netlify/functions --port 8890 --staticServerPort 4003"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.0",
+    "twilio": "^5.7.0"
+  }
+}

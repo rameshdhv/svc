@@ -1,0 +1,167 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gait Physio Clinic | Analytics Insights</title>
+  <meta name="description" content="Analytics insights dashboard for Gait Physio Clinic admin users." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=28" />
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="logo">Gait Physio Clinic</div>
+      <nav class="nav-links" aria-label="Primary">
+        <a class="nav-link" href="./index.html#home">Home</a>
+        <a class="nav-link" href="./index.html#services">Services</a>
+        <a class="nav-link" href="./index.html#book">Book</a>
+        <a class="nav-link active" href="./analytics.html">Analytics</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="cta-call" href="tel:+918328010083">Call: 8328010083</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container admin-shell">
+    <section class="card analytics-hero-card">
+      <div class="analytics-hero-copy">
+        <span class="eyebrow">Operations Intelligence</span>
+        <h1>Analytics Insights</h1>
+        <p class="lead">Track physiotherapy booking demand, approvals, clinic load, and patient behavior patterns through clean operational infographics.</p>
+      </div>
+      <div class="inline-actions">
+        <a class="btn secondary" href="./doctors-login.html">Back to Dashboard</a>
+      </div>
+    </section>
+
+    <section class="card" id="analyticsAuthCard">
+      <h2 style="font-size:1.8rem;">Admin Access Required</h2>
+      <p class="lead">This page is available only for logged-in lead therapist or staff accounts.</p>
+      <div class="inline-actions" style="margin-top:0.9rem;">
+        <a class="btn" href="./doctors-login.html">Go to Admin Login</a>
+      </div>
+      <div id="analyticsAuthStatus" class="status" aria-live="polite"></div>
+    </section>
+
+    <section id="analyticsApp" hidden>
+      <section class="card">
+        <div class="analytics-toolbar">
+          <div>
+            <h3>Analysis Window</h3>
+            <p class="lead">Compare recent demand, conversion, and capacity trends.</p>
+          </div>
+          <div class="analytics-filter-actions">
+            <select id="analyticsRange">
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="180">Last 180 days</option>
+              <option value="365">Last 365 days</option>
+            </select>
+            <button id="analyticsRefreshBtn" type="button" class="btn secondary">Refresh</button>
+          </div>
+        </div>
+        <div id="analyticsStatus" class="status" aria-live="polite"></div>
+      </section>
+
+      <section class="card" style="margin-top:12px;">
+        <div class="analytics-overview-grid" id="analyticsOverview"></div>
+      </section>
+
+      <section class="analytics-grid-section">
+        <article class="card analytics-panel analytics-panel--wide">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>Bookings Trend</h3>
+              <p class="lead" id="bookingsTrendLead">Daily booking request pattern across the selected window.</p>
+            </div>
+          </div>
+          <div class="chart-shell">
+            <svg id="bookingsTrendChart" class="analytics-line-chart" viewBox="0 0 720 280" aria-label="Bookings trend chart"></svg>
+          </div>
+        </article>
+
+        <article class="card analytics-panel">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>Approval Funnel</h3>
+              <p class="lead">How requests move through clinic review states.</p>
+            </div>
+          </div>
+          <div id="approvalFunnel" class="funnel-list"></div>
+        </article>
+
+        <article class="card analytics-panel">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>Service Mix</h3>
+              <p class="lead">Most requested physiotherapy services in the selected period.</p>
+            </div>
+          </div>
+          <div id="serviceMix" class="analytics-bars"></div>
+        </article>
+
+        <article class="card analytics-panel">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>Peak Time Slots</h3>
+              <p class="lead">Most-booked consultation windows.</p>
+            </div>
+          </div>
+          <div id="peakSlots" class="analytics-bars"></div>
+        </article>
+
+        <article class="card analytics-panel">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>Weekday Demand</h3>
+              <p class="lead">Busiest clinic days based on appointment dates.</p>
+            </div>
+          </div>
+          <div id="weekdayDemand" class="analytics-bars"></div>
+        </article>
+
+        <article class="card analytics-panel analytics-panel--wide">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>Visits vs Bookings</h3>
+              <p class="lead">Simple conversion pattern between site visits and booking requests.</p>
+            </div>
+          </div>
+          <div id="visitsVsBookings" class="comparison-grid"></div>
+        </article>
+
+        <article class="card analytics-panel">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>Blocked Capacity</h3>
+              <p class="lead">Operational capacity affected by holidays and blocked sessions.</p>
+            </div>
+          </div>
+          <div id="blockedCapacity" class="analytics-stat-stack"></div>
+        </article>
+
+        <article class="card analytics-panel">
+          <div class="analytics-panel-head">
+            <div>
+              <h3>Insight Notes</h3>
+              <p class="lead">Quick operational reading for the lead therapist and staff.</p>
+            </div>
+          </div>
+          <div id="insightNotes" class="insight-note-list"></div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./assets/js/analytics.js?v=1"></script>
+</body>
+</html>
+
+
+
+

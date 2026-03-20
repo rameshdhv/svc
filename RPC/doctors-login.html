@@ -1,0 +1,565 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gait Physio Clinic | Clinic Login</title>
+  <meta name="description" content="Clinic dashboard for appointment approvals, scheduling, and analytics." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=28" />
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="logo">Gait Physio Clinic</div>
+      <nav class="nav-links" aria-label="Primary">
+        <a class="nav-link" href="./index.html#home">Home</a>
+        <a class="nav-link" href="./index.html#services">Services</a>
+        <a class="nav-link" href="./index.html#book">Book</a>
+        <a class="nav-link active" href="./doctors-login.html">Clinic Login</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="cta-call" href="tel:+918328010083">Call: 8328010083</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container admin-shell">
+    <section class="card" id="authCard">
+      <div class="role-switch" role="tablist" aria-label="Login role">
+        <button type="button" class="role-switch-btn active" id="dentistRoleBtn" data-role="lead_therapist" aria-selected="true">Login as Lead Therapist</button>
+        <button type="button" class="role-switch-btn" id="staffRoleBtn" data-role="staff" aria-selected="false">Login as Staff</button>
+      </div>
+      <h1 id="authTitle" style="font-size:2rem;">Clinic Login</h1>
+      <p class="lead" id="authLead">Lead therapist and staff can access the clinic dashboard using email, password, and authenticator code.</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">Email Address</label>
+          <input id="email" type="email" required placeholder="team@clinic.com" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" required placeholder="Enter password" />
+        </div>
+        <button type="submit" class="btn">Login</button>
+      </form>
+      <button id="forgotPasswordBtn" type="button" class="btn secondary" style="margin-top:8px;">Forgot Password?</button>
+
+      <form id="confirmLinkForm" hidden class="auth-subflow" style="margin-top: 10px;">
+        <div class="auth-helper-card">
+          <h3>Resend Confirmation Link</h3>
+          <p>Use this if the account exists but email confirmation was not completed yet.</p>
+        </div>
+        <div class="field">
+          <label for="confirmLinkEmail">Registered Email</label>
+          <input id="confirmLinkEmail" type="email" placeholder="team@clinic.com" />
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button id="confirmLinkBackBtn" type="button" class="btn secondary">Back to Login</button>
+          <button id="confirmLinkSubmitBtn" type="submit" class="btn">Send Confirmation Link</button>
+        </div>
+      </form>
+
+      <form id="forgotForm" hidden class="auth-subflow" style="margin-top: 10px;">
+        <div class="auth-helper-card">
+          <h3>Reset Your Password</h3>
+          <p>Enter your registered email address. We will send a reset link to that inbox.</p>
+          <ol class="auth-helper-steps">
+            <li>Open the reset email.</li>
+            <li>Click the link from the same device if possible.</li>
+            <li>This page will open the new password form automatically.</li>
+          </ol>
+        </div>
+        <div class="field">
+          <label for="forgotEmail">Registered Email</label>
+          <input id="forgotEmail" type="email" placeholder="team@clinic.com" />
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button id="forgotBackBtn" type="button" class="btn secondary">Back to Login</button>
+          <button id="forgotSubmitBtn" type="submit" class="btn">Send Reset Link</button>
+        </div>
+        <small id="forgotCooldownText" class="lead" style="display:block; margin-top:6px;"></small>
+      </form>
+
+      <div id="forgotSentPanel" hidden class="auth-subflow" style="margin-top: 10px;">
+        <div class="auth-helper-card auth-helper-success">
+          <h3>Reset Link Sent</h3>
+          <p id="forgotSentMessage">Check your inbox and open the password reset link.</p>
+          <ol class="auth-helper-steps">
+            <li>Open the email we sent.</li>
+            <li>Click the reset link.</li>
+            <li>Create a new password here, then log in again.</li>
+          </ol>
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button id="forgotSentBackBtn" type="button" class="btn secondary">Back to Login</button>
+          <button id="forgotTryAgainBtn" type="button" class="btn secondary">Use Another Email</button>
+          <button id="forgotSentResendConfirmBtn" type="button" class="btn secondary">Resend Confirmation Link</button>
+        </div>
+      </div>
+
+      <form id="resetForm" hidden class="auth-subflow" style="margin-top: 10px;">
+        <div class="auth-helper-card">
+          <h3>Create New Password</h3>
+          <p>Use a new password for this dashboard account. After saving, log in again with your authenticator code.</p>
+        </div>
+        <div class="field">
+          <label for="newPassword">New Password</label>
+          <input id="newPassword" type="password" placeholder="Enter new password" />
+        </div>
+        <div class="field">
+          <label for="confirmNewPassword">Confirm Password</label>
+          <input id="confirmNewPassword" type="password" placeholder="Re-enter new password" />
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button id="resetBackBtn" type="button" class="btn secondary">Back to Login</button>
+          <button type="submit" class="btn">Update Password</button>
+        </div>
+      </form>
+
+      <div id="mfaSetupPanel" hidden style="margin-top: 10px;">
+        <h3>Set Up Authenticator</h3>
+        <p class="lead" style="margin-top:6px;">Scan this QR code using Google Authenticator or any TOTP app linked to this admin account, then enter the 6-digit code.</p>
+        <div id="mfaQrWrap" class="mfa-qr-wrap"></div>
+        <div class="field">
+          <label for="mfaSecret">Setup Key</label>
+          <input id="mfaSecret" type="text" readonly />
+        </div>
+        <div class="field">
+          <label for="mfaEnrollCode">Authenticator Code</label>
+          <input id="mfaEnrollCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter 6-digit code" />
+        </div>
+        <div class="modal-actions">
+          <button id="mfaSetupCancelBtn" type="button" class="btn secondary">Back</button>
+          <button id="mfaSetupVerifyBtn" type="button" class="btn">Verify & Continue</button>
+        </div>
+      </div>
+
+      <div id="mfaVerifyPanel" hidden style="margin-top: 10px;">
+        <h3>Authenticator Check</h3>
+        <p class="lead" style="margin-top:6px;">Enter the current 6-digit code from Google Authenticator to continue to the admin dashboard.</p>
+        <div class="field">
+          <label for="mfaVerifyCode">Authenticator Code</label>
+          <input id="mfaVerifyCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter 6-digit code" />
+        </div>
+        <div class="modal-actions">
+          <button id="mfaVerifyCancelBtn" type="button" class="btn secondary">Back</button>
+          <button id="mfaVerifyBtn" type="button" class="btn">Verify & Continue</button>
+        </div>
+      </div>
+
+      <div class="status" id="loginStatus" aria-live="polite"></div>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="card">
+        <div style="display:flex; justify-content: space-between; gap:8px; align-items:center; flex-wrap:wrap;">
+          <h2 style="font-size:1.8rem;">Clinic Appointments Dashboard</h2>
+          <div class="inline-actions">
+            <button id="refreshDashboardBtn" class="btn secondary" type="button">Refresh</button>
+            <button id="openSettingsBtn" class="btn secondary" type="button" aria-label="Open control panel" title="Control Panel">Control Panel ?</button>
+            <button id="logout" class="btn secondary" type="button">Logout</button>
+          </div>
+        </div>
+        <div class="status" id="appStatus" aria-live="polite"></div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+          <h3>Analytics Snapshot</h3>
+          <div class="inline-actions">
+            <a class="btn secondary" href="./analytics.html">View Insights ?</a>
+          </div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="label">Page Visits</div><div class="value" id="kpiVisits">0</div></div>
+          <div class="kpi"><div class="label">Bookings</div><div class="value" id="kpiBookings">0</div></div>
+          <div class="kpi"><div class="label">Pending</div><div class="value" id="kpiPending">0</div></div>
+          <div class="kpi"><div class="label">Approval Rate</div><div class="value" id="kpiApproval">0%</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+          <h3>Day Snapshot</h3>
+          <div class="inline-actions">
+            <input id="timelineDate" type="date" />
+            <button id="refreshTimelineBtn" type="button" class="btn secondary">Refresh</button>
+            <button id="toggleTimelineBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse day snapshot" title="Collapse day snapshot">?</button>
+          </div>
+        </div>
+        <div id="timelineContent">
+          <p id="timelineSummary" class="lead" style="margin: 8px 0 10px;"></p>
+          <div id="timelineBody" class="timeline-grid"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px; overflow-x:auto;">
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+          <h3>Appointments</h3>
+          <div class="inline-actions">
+            <button id="toggleAppointmentsBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse appointments" title="Collapse appointments">?</button>
+          </div>
+        </div>
+        <div id="appointmentsContent">
+        <div class="toolbar" style="margin-bottom: 10px;">
+          <select id="statusFilter">
+            <option value="">All statuses</option>
+            <option>Pending</option>
+            <option>Approved</option>
+            <option>Rejected</option>
+            <option>Completed</option>
+            <option>No-show</option>
+          </select>
+          <select id="serviceFilter">
+            <option value="">All services</option>
+            <option>General</option>
+            <option>Musculoskeletal Physiotherapy</option>
+            <option>Sports Physiotherapy</option>
+            <option>Neurological Physiotherapy</option>
+            <option>Geriatric Physiotherapy</option>
+            <option>Paediatric Physiotherapy</option>
+            <option>Women's Health Physiotherapy</option>
+            <option>Vestibular Rehabilitation</option>
+            <option>Post-Operative Rehabilitation</option>
+            <option>Pain Management Physiotherapy</option>
+          </select>
+          <input id="fromDate" type="date" />
+          <input id="toDate" type="date" />
+          <div style="display:flex; gap:8px;">
+            <button id="applyFilters" type="button" class="btn">Apply</button>
+            <button id="resetFilters" type="button" class="btn secondary">Reset</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Date & Slot</th>
+              <th>Service</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="appointmentsBody"></tbody>
+        </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <h3 style="margin-bottom:10px;">Book for Patient</h3>
+        <form id="manualBookingForm">
+          <div class="toolbar">
+            <input id="manualName" type="text" placeholder="Patient name" required />
+            <input id="manualPhone" type="tel" placeholder="Patient phone" required />
+            <input id="manualDate" type="date" required />
+            <select id="manualSlot" required>
+              <option value="">Select slot</option>
+            </select>
+            <select id="manualService" required>
+              <option value="">Select service</option>
+            </select>
+          </div>
+          <div class="toolbar" style="margin-top: 8px;">
+            <input id="manualNotes" type="text" placeholder="Notes (optional)" />
+            <div></div>
+            <div></div>
+            <div></div>
+            <button type="submit" class="btn">Book & Notify on WhatsApp</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+          <h3>Emergency Session Blocking</h3>
+          <div class="inline-actions">
+            <button id="toggleEmergencyBlockBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse emergency session blocking" title="Collapse emergency session blocking">?</button>
+          </div>
+        </div>
+        <div id="emergencyBlockContent">
+        <form id="slotBlockForm">
+          <div class="toolbar">
+            <input id="slotBlockDate" type="date" required />
+            <button id="slotPickerOpenBtn" type="button" class="btn secondary">Select Sessions</button>
+            <p id="slotPickerSummary" class="lead">No session selected</p>
+            <select id="slotBlockLabel" multiple size="6" aria-label="Select one or more session slots" hidden></select>
+            <input id="slotBlockReason" type="text" placeholder="Reason (optional)" />
+            <button type="submit" class="btn">Block Session</button>
+          </div>
+          <p class="lead" style="margin-top:8px;">Use Select Sessions to choose one or more time slots, then block in one go.</p>
+        </form>
+        <div style="margin-top: 10px; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Session</th>
+                <th>Reason</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="blockedSlotsBody"></tbody>
+          </table>
+        </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+          <h3>Holiday / Leave Blocking</h3>
+          <div class="inline-actions">
+            <button id="toggleLeaveBlockBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse holiday and leave blocking" title="Collapse holiday and leave blocking">?</button>
+          </div>
+        </div>
+        <div id="leaveBlockContent">
+        <form id="blockForm">
+          <div class="toolbar">
+            <input id="blockFromDate" type="date" required />
+            <input id="blockToDate" type="date" required />
+            <input id="blockReason" type="text" placeholder="Reason (optional)" />
+            <div></div>
+            <button id="addBlockBtn" type="submit" class="btn">Block Dates</button>
+          </div>
+        </form>
+        <div style="margin-top: 10px; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>To</th>
+                <th>Reason</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="blockedDatesBody"></tbody>
+          </table>
+        </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="confirmModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <h3 id="confirmTitle">Confirm Status Change</h3>
+      <p id="confirmMessage" class="lead" style="margin-top: 6px;"></p>
+      <div id="confirmWhatsappWrap" class="confirm-check-row" style="margin-top: 8px;">
+        <label class="confirm-check-label">
+          <input id="confirmWhatsappNotify" type="checkbox" checked />
+          <span>Notify via WhatsApp</span>
+        </label>
+      </div>
+      <div id="confirmReasonWrap" class="field" style="margin-top: 8px;" hidden>
+        <label for="confirmReason">Reason (required for unblocking)</label>
+        <select id="confirmReason">
+          <option value="">Select reason</option>
+          <option value="customer didnt showup">Customer didnt showup</option>
+          <option value="customer requested cancellation">Customer requested cancellation</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="confirmCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="confirmOk" class="btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="whatsappConfirmModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="whatsappConfirmTitle">
+      <h3 id="whatsappConfirmTitle">Finish WhatsApp Notification</h3>
+      <p id="whatsappConfirmMessage" class="lead" style="margin-top: 6px;">Send the WhatsApp message, then confirm below. Status will update only after confirmation.</p>
+      <div class="modal-actions">
+        <button type="button" id="whatsappConfirmCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="whatsappConfirmOpen" class="btn secondary">Open WhatsApp</button>
+        <button type="button" id="whatsappConfirmSent" class="btn">Message Sent</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="blockConflictModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="blockConflictTitle">
+      <h3 id="blockConflictTitle">Approved Appointment Conflict</h3>
+      <p id="blockConflictMessage" class="lead" style="margin-top: 6px;"></p>
+      <div id="blockConflictList" class="conflict-list"></div>
+      <div class="modal-actions">
+        <button type="button" id="blockConflictCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="blockConflictProceed" class="btn">Proceed Anyway</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="noticeModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="noticeTitle">
+      <h3 id="noticeTitle">Booking Conflict</h3>
+      <p id="noticeMessage" class="lead" style="margin-top: 6px;"></p>
+      <div class="modal-actions">
+        <button type="button" id="noticeOk" class="btn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="totpConfirmModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="totpConfirmTitle">
+      <h3 id="totpConfirmTitle">Authenticator Check</h3>
+      <p id="totpConfirmMessage" class="lead" style="margin-top: 6px;">Enter your current 6-digit authenticator code to continue.</p>
+      <div class="field" style="margin-top: 10px;">
+        <label for="totpConfirmCode">Authenticator Code</label>
+        <input id="totpConfirmCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter 6-digit code" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="totpConfirmCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="totpConfirmOk" class="btn">Verify</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-header">
+        <h3 id="settingsTitle">Control Panel</h3>
+        <button
+          id="settingsCloseBtn"
+          type="button"
+          class="icon-btn modal-close-btn"
+          aria-label="Close control panel"
+          title="Close control panel"
+        >
+          ×
+        </button>
+      </div>
+      <p class="lead" style="margin-top:6px;">Set slot rules and booking visibility. Slot duration change applies from selected date only when there are no active appointments for that date.</p>
+      <form id="settingsForm">
+        <div class="field">
+          <label for="slotDurationSelect">Slot Duration</label>
+          <select id="slotDurationSelect" required>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="slotEffectiveDate">Effective From Date</label>
+          <input id="slotEffectiveDate" type="date" required />
+        </div>
+        <div class="field">
+          <label for="bookingWindowDays">Show Slots For Next (Days)</label>
+          <input id="bookingWindowDays" type="number" min="1" max="90" required />
+        </div>
+        <div class="field">
+          <label>Permanent Weekly Off</label>
+          <div class="weekday-grid">
+            <label><input type="checkbox" class="weekly-off" value="Sunday" /> Sunday</label>
+            <label><input type="checkbox" class="weekly-off" value="Monday" /> Monday</label>
+            <label><input type="checkbox" class="weekly-off" value="Tuesday" /> Tuesday</label>
+            <label><input type="checkbox" class="weekly-off" value="Wednesday" /> Wednesday</label>
+            <label><input type="checkbox" class="weekly-off" value="Thursday" /> Thursday</label>
+            <label><input type="checkbox" class="weekly-off" value="Friday" /> Friday</label>
+            <label><input type="checkbox" class="weekly-off" value="Saturday" /> Saturday</label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="settingsCancelBtn" type="button" class="btn secondary">Cancel</button>
+          <button type="submit" class="btn">Save Settings</button>
+        </div>
+      </form>
+
+      <div id="manageUsersSection">
+        <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
+        <div class="section-head">
+          <div>
+            <h3 style="font-size:1.2rem;">Manage Users</h3>
+            <p class="lead" style="margin-top:6px;">Lead therapist can create new dashboard users without opening Supabase.</p>
+          </div>
+          <button id="toggleManageUsersBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse manage users" title="Collapse manage users">?</button>
+        </div>
+        <div id="manageUsersContent">
+        <div class="section-head" style="margin-bottom:10px;">
+          <div>
+            <h4 style="font-size:1rem;">Current Access Users</h4>
+            <p class="lead" id="userAccessSummary" style="margin-top:6px;">Loading users...</p>
+          </div>
+          <button id="refreshUsersBtn" type="button" class="icon-btn collapse-toggle" aria-label="Refresh users" title="Refresh users">?</button>
+        </div>
+        <div id="userAccessList" class="user-access-list"></div>
+        <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
+        <form id="addUserForm">
+          <div class="field">
+            <label for="newUserName">Full Name</label>
+            <input id="newUserName" type="text" placeholder="Doctor or staff name" />
+          </div>
+          <div class="field">
+            <label for="newUserEmail">Email Address</label>
+            <input id="newUserEmail" type="email" placeholder="staff@clinic.com" />
+          </div>
+          <div class="field">
+            <label for="newUserPassword">Temporary Password</label>
+            <input id="newUserPassword" type="password" placeholder="Set temporary password" />
+          </div>
+          <div class="field">
+            <label for="newUserRole">Role</label>
+            <select id="newUserRole">
+              <option value="staff">Staff</option>
+              <option value="lead_therapist">Lead Therapist</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button id="addUserBtn" type="submit" class="btn">Add User</button>
+          </div>
+        </form>
+        </div>
+        <hr style="border:none; border-top:1px solid #e4efe8; margin:12px 0;" />
+      </div>
+        <div id="resetPastDataSection">
+          <h3 style="font-size:1.2rem;">Reset Past Data</h3>
+          <p class="lead" style="margin-top:6px;">Delete older records for selected month. This action is permanent.</p>
+          <div class="field">
+            <label for="purgeMonth">Delete Data Before Month</label>
+            <input id="purgeMonth" type="month" />
+          </div>
+          <div class="field">
+            <label for="purgePassword">Confirm Admin Password</label>
+            <input id="purgePassword" type="password" placeholder="Enter your current password" />
+          </div>
+          <div class="modal-actions">
+            <button id="purgeDataBtn" type="button" class="btn secondary">Reset Past Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div id="slotPickerModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="slotPickerTitle">
+      <h3 id="slotPickerTitle">Select Sessions to Block</h3>
+      <p class="lead" style="margin-top:6px;">Pick one or more sessions.</p>
+      <div id="slotPickerList" class="slot-picker-grid"></div>
+      <div class="modal-actions">
+        <button id="slotSelectAllBtn" type="button" class="btn secondary">Select All</button>
+        <button id="slotClearBtn" type="button" class="btn secondary">Clear</button>
+        <button id="slotPickerCancelBtn" type="button" class="btn secondary">Cancel</button>
+        <button id="slotPickerApplyBtn" type="button" class="btn">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="liveAlertRoot" class="toast-stack toast-stack--bottom-left" aria-live="polite" aria-atomic="true"></div>
+  <div id="toastRoot" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="./assets/js/admin.js?v=52"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
