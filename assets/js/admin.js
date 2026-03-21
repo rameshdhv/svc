@@ -112,9 +112,33 @@ const dashboardSectionIds = [
   "dashboardOverview",
   "dashboardSnapshot",
   "dashboardAppointments",
+  "dashboardPatients",
   "dashboardQuickBook",
   "dashboardSchedule"
 ];
+const patientSearchInput = document.getElementById("patientSearchInput");
+const importPatientsBtn = document.getElementById("importPatientsBtn");
+const newPatientBtn = document.getElementById("newPatientBtn");
+const patientListSummary = document.getElementById("patientListSummary");
+const patientRecordsBody = document.getElementById("patientRecordsBody");
+const patientEmptyState = document.getElementById("patientEmptyState");
+const patientDetailContent = document.getElementById("patientDetailContent");
+const patientDetailTitle = document.getElementById("patientDetailTitle");
+const patientDetailMeta = document.getElementById("patientDetailMeta");
+const patientDriveLink = document.getElementById("patientDriveLink");
+const patientEditBtn = document.getElementById("patientEditBtn");
+const patientDeleteBtn = document.getElementById("patientDeleteBtn");
+const patientForm = document.getElementById("patientForm");
+const patientFormId = document.getElementById("patientFormId");
+const patientNameInput = document.getElementById("patientNameInput");
+const patientPhoneInput = document.getElementById("patientPhoneInput");
+const patientDriveUrlInput = document.getElementById("patientDriveUrlInput");
+const savePatientBtn = document.getElementById("savePatientBtn");
+const consultationForm = document.getElementById("consultationForm");
+const consultationDateInput = document.getElementById("consultationDateInput");
+const consultationNotesInput = document.getElementById("consultationNotesInput");
+const consultationReportUrlInput = document.getElementById("consultationReportUrlInput");
+const patientConsultationsBody = document.getElementById("patientConsultationsBody");
 
 const quickTabs = document.querySelectorAll(".quick-tab");
 const timelineDate = document.getElementById("timelineDate");
@@ -144,6 +168,10 @@ const blockConflictProceed = document.getElementById("blockConflictProceed");
 const noticeModal = document.getElementById("noticeModal");
 const noticeMessage = document.getElementById("noticeMessage");
 const noticeOk = document.getElementById("noticeOk");
+const patientDeleteModal = document.getElementById("patientDeleteModal");
+const patientDeleteMessage = document.getElementById("patientDeleteMessage");
+const patientDeleteCancel = document.getElementById("patientDeleteCancel");
+const patientDeleteConfirm = document.getElementById("patientDeleteConfirm");
 const totpConfirmModal = document.getElementById("totpConfirmModal");
 const totpConfirmMessage = document.getElementById("totpConfirmMessage");
 const totpConfirmCode = document.getElementById("totpConfirmCode");
@@ -193,6 +221,10 @@ let currentAdminProfile = null;
 let settingsModalHistoryActive = false;
 let pendingTotpResolver = null;
 let recoveryModeActive = false;
+let patientRecordsCache = [];
+let selectedPatientRecordId = null;
+let patientDetailEditing = false;
+let pendingPatientDeleteId = null;
 const FORGOT_COOLDOWN_SECONDS = 90;
 const FORGOT_COOLDOWN_KEY = "sarvam_forgot_cooldown_until";
 const LIVE_ALERT_POLL_MS = 10000;
@@ -482,6 +514,10 @@ function getActorRoleLabel() {
   return currentAdminProfile?.role === "staff" ? "staff" : "dentist";
 }
 
+function canDeletePatientRecords() {
+  return currentAdminProfile?.role === "dentist";
+}
+
 function showLiveAlert(message, type = "success") {
   if (!liveAlertRoot || !message) {
     return;
@@ -641,6 +677,11 @@ async function finishAdminSignIn() {
   setStatus(appStatus, "Logged in. Loading appointments...", "ok");
   startLiveBookingNotifications();
   await loadDashboard();
+  try {
+    await loadPatientRecords({ preserveSelection: false });
+  } catch (patientError) {
+    setStatus(appStatus, `Patient records are unavailable right now: ${patientError.message}`, "warn");
+  }
 }
 
 async function cancelMfaFlow() {
@@ -1273,6 +1314,25 @@ function openNoticeModal(message) {
 
 function closeNoticeModal() {
   noticeModal.hidden = true;
+}
+
+function openPatientDeleteModal(patient) {
+  pendingPatientDeleteId = patient?.id || null;
+  if (patientDeleteMessage) {
+    patientDeleteMessage.textContent = patient?.patient_name
+      ? `Are you sure you want to delete ${patient.patient_name}'s record? Consultation history linked to this patient will also be removed.`
+      : "Are you sure you want to delete this patient record? Consultation history linked to this patient will also be removed.";
+  }
+  if (patientDeleteModal) {
+    patientDeleteModal.hidden = false;
+  }
+}
+
+function closePatientDeleteModal() {
+  pendingPatientDeleteId = null;
+  if (patientDeleteModal) {
+    patientDeleteModal.hidden = true;
+  }
 }
 
 function openTotpConfirmModal(message) {
@@ -2175,6 +2235,467 @@ function setupDashboardNavigation() {
   });
 }
 
+function formatPatientDetailMeta(patient) {
+  const pieces = [patient.clinic_patient_code, patient.patient_phone];
+  return pieces.filter(Boolean).join(" • ");
+}
+
+function setPatientDetailEditing(editing, options = {}) {
+  const { isNew = false } = options;
+  patientDetailEditing = Boolean(editing);
+  const allowDelete = !isNew && canDeletePatientRecords();
+
+  [patientNameInput, patientPhoneInput, patientDriveUrlInput].forEach((field) => {
+    if (!field) {
+      return;
+    }
+    field.readOnly = !patientDetailEditing;
+    field.classList.toggle("readonly-input", !patientDetailEditing);
+  });
+
+  if (patientEditBtn) {
+    patientEditBtn.hidden = isNew;
+    patientEditBtn.textContent = patientDetailEditing ? "Cancel Edit" : "Edit Details";
+  }
+  if (patientDeleteBtn) {
+    patientDeleteBtn.hidden = !allowDelete;
+  }
+  if (savePatientBtn) {
+    savePatientBtn.hidden = !patientDetailEditing;
+  }
+}
+
+function renderPatientEmptyState(message = "Choose a patient from the list or create a new record to start tracking consultations.") {
+  if (patientEmptyState) {
+    patientEmptyState.hidden = false;
+    const lead = patientEmptyState.querySelector(".lead");
+    if (lead) {
+      lead.textContent = message;
+    }
+  }
+  if (patientDetailContent) {
+    patientDetailContent.hidden = true;
+  }
+  if (patientConsultationsBody) {
+    patientConsultationsBody.innerHTML = "";
+  }
+}
+
+function renderPatientList() {
+  if (!patientRecordsBody) {
+    return;
+  }
+  const query = String(patientSearchInput?.value || "").trim().toLowerCase();
+  const rows = patientRecordsCache.filter((patient) => {
+    if (!query) {
+      return true;
+    }
+    return [
+      patient.clinic_patient_code,
+      patient.patient_name,
+      patient.patient_phone
+    ].some((value) => String(value || "").toLowerCase().includes(query));
+  });
+
+  patientRecordsBody.innerHTML = "";
+  if (patientListSummary) {
+    patientListSummary.textContent = rows.length
+      ? `${rows.length} patient record${rows.length === 1 ? "" : "s"}`
+      : "No matching patient records.";
+  }
+
+  if (!rows.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 3;
+    td.textContent = "No patient records found.";
+    tr.appendChild(td);
+    patientRecordsBody.appendChild(tr);
+    if (selectedPatientRecordId && !patientRecordsCache.some((patient) => patient.id === selectedPatientRecordId)) {
+      selectedPatientRecordId = null;
+      renderPatientEmptyState();
+    }
+    return;
+  }
+
+  rows.forEach((patient) => {
+    const tr = document.createElement("tr");
+    tr.className = patient.id === selectedPatientRecordId ? "patient-row active" : "patient-row";
+    tr.tabIndex = 0;
+    tr.innerHTML = `
+      <td>${patient.clinic_patient_code || "—"}</td>
+      <td>${patient.patient_name || "—"}</td>
+      <td>${patient.patient_phone || "—"}</td>
+    `;
+    const openPatient = () => {
+      selectPatientRecord(patient.id);
+    };
+    tr.addEventListener("click", openPatient);
+    tr.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openPatient();
+      }
+    });
+    patientRecordsBody.appendChild(tr);
+  });
+}
+
+function resetPatientForm() {
+  patientForm?.reset();
+  consultationForm?.reset();
+  if (consultationDateInput) {
+    consultationDateInput.value = todayYmdInKolkata();
+  }
+  if (patientFormId) {
+    patientFormId.value = "";
+  }
+  selectedPatientRecordId = null;
+  renderPatientList();
+  if (patientEmptyState) {
+    patientEmptyState.hidden = true;
+  }
+  if (patientDetailContent) {
+    patientDetailContent.hidden = false;
+  }
+  if (patientDetailTitle) {
+    patientDetailTitle.textContent = "New Patient Record";
+  }
+  if (patientDetailMeta) {
+    patientDetailMeta.textContent = "Create a patient profile, then start logging consultations.";
+  }
+  if (patientDriveLink) {
+    patientDriveLink.hidden = true;
+    patientDriveLink.removeAttribute("href");
+    patientDriveLink.textContent = "Open folder";
+  }
+  setPatientDetailEditing(true, { isNew: true });
+  if (patientConsultationsBody) {
+    patientConsultationsBody.innerHTML = "";
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 3;
+    td.textContent = "Save the patient first, then add consultation history.";
+    tr.appendChild(td);
+    patientConsultationsBody.appendChild(tr);
+  }
+  patientNameInput?.focus();
+}
+
+function renderPatientDetail(patient, consultations = []) {
+  if (!patient) {
+    renderPatientEmptyState();
+    return;
+  }
+  consultationForm?.reset();
+  if (consultationDateInput) {
+    consultationDateInput.value = todayYmdInKolkata();
+  }
+  if (patientEmptyState) {
+    patientEmptyState.hidden = true;
+  }
+  if (patientDetailContent) {
+    patientDetailContent.hidden = false;
+  }
+  if (patientFormId) {
+    patientFormId.value = patient.id;
+  }
+  if (patientNameInput) {
+    patientNameInput.value = patient.patient_name || "";
+  }
+  if (patientPhoneInput) {
+    patientPhoneInput.value = patient.patient_phone || "";
+  }
+  if (patientDriveUrlInput) {
+    patientDriveUrlInput.value = patient.drive_folder_url || "";
+  }
+  if (patientDetailTitle) {
+    patientDetailTitle.textContent = patient.patient_name || "Patient Details";
+  }
+  if (patientDetailMeta) {
+    patientDetailMeta.textContent = formatPatientDetailMeta(patient);
+  }
+  if (patientDriveLink) {
+    if (patient.drive_folder_url) {
+      patientDriveLink.hidden = false;
+      patientDriveLink.href = patient.drive_folder_url;
+      patientDriveLink.textContent = "Open folder";
+    } else {
+      patientDriveLink.hidden = true;
+      patientDriveLink.removeAttribute("href");
+      patientDriveLink.textContent = "No folder linked";
+    }
+  }
+  setPatientDetailEditing(false, { isNew: false });
+  if (patientConsultationsBody) {
+    patientConsultationsBody.innerHTML = "";
+    if (!consultations.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 3;
+      td.textContent = "No consultation history yet.";
+      tr.appendChild(td);
+      patientConsultationsBody.appendChild(tr);
+    } else {
+      consultations.forEach((consultation) => {
+        const tr = document.createElement("tr");
+        const reportCell = consultation.report_url
+          ? `<a href="${consultation.report_url}" target="_blank" rel="noopener noreferrer">Open link</a>`
+          : "—";
+        tr.innerHTML = `
+          <td>${consultation.consultation_date || "—"}</td>
+          <td>${consultation.notes || "—"}</td>
+          <td>${reportCell}</td>
+        `;
+        patientConsultationsBody.appendChild(tr);
+      });
+    }
+  }
+}
+
+async function loadPatientConsultations(patientId) {
+  const { data, error } = await supabase
+    .from("patient_consultations")
+    .select("id, consultation_date, notes, report_url, created_at")
+    .eq("patient_id", patientId)
+    .order("consultation_date", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data || [];
+}
+
+async function selectPatientRecord(patientId) {
+  selectedPatientRecordId = patientId;
+  renderPatientList();
+  const patient = patientRecordsCache.find((entry) => entry.id === patientId);
+  if (!patient) {
+    renderPatientEmptyState();
+    return;
+  }
+  try {
+    const consultations = await loadPatientConsultations(patientId);
+    renderPatientDetail(patient, consultations);
+  } catch (error) {
+    setStatus(appStatus, `Unable to load consultation history: ${error.message}`, "error");
+    showToast("Unable to load consultation history.", "error");
+  }
+}
+
+async function loadPatientRecords(options = {}) {
+  const { preserveSelection = true } = options;
+  const { data, error } = await supabase
+    .from("patients")
+    .select("id, clinic_patient_code, patient_name, patient_phone, drive_folder_url, created_at")
+    .order("patient_name", { ascending: true });
+  if (error) {
+    throw new Error(error.message);
+  }
+  patientRecordsCache = data || [];
+  renderPatientList();
+  if (preserveSelection && selectedPatientRecordId) {
+    if (patientRecordsCache.some((patient) => patient.id === selectedPatientRecordId)) {
+      await selectPatientRecord(selectedPatientRecordId);
+      return;
+    }
+  }
+  if (patientRecordsCache.length && !selectedPatientRecordId) {
+    await selectPatientRecord(patientRecordsCache[0].id);
+    return;
+  }
+  if (!patientRecordsCache.length) {
+    renderPatientEmptyState();
+  }
+}
+
+async function importPatientsFromAppointments() {
+  const { data: appointments, error } = await supabase
+    .from("appointments")
+    .select("patient_name, patient_phone, created_at")
+    .order("created_at", { ascending: false });
+  if (error) {
+    throw new Error(error.message);
+  }
+  const existingByPhone = new Set(patientRecordsCache.map((patient) => patient.patient_phone));
+  const seen = new Set();
+  const rowsToInsert = [];
+  (appointments || []).forEach((appointment) => {
+    const phone = String(appointment.patient_phone || "").trim();
+    const name = String(appointment.patient_name || "").trim();
+    if (!phone || !name || existingByPhone.has(phone) || seen.has(phone)) {
+      return;
+    }
+    seen.add(phone);
+    rowsToInsert.push({
+      patient_name: name,
+      patient_phone: phone
+    });
+  });
+  if (!rowsToInsert.length) {
+    showToast("No new patients found in appointments.", "warn");
+    return;
+  }
+  const { error: insertError } = await supabase.from("patients").insert(rowsToInsert);
+  if (insertError) {
+    throw new Error(insertError.message);
+  }
+  showToast(`${rowsToInsert.length} patient record(s) imported.`, "success");
+  await loadPatientRecords({ preserveSelection: false });
+}
+
+async function savePatientRecord(event) {
+  event.preventDefault();
+  const patientName = String(patientNameInput?.value || "").trim();
+  const patientPhone = String(patientPhoneInput?.value || "").trim();
+  const driveFolderUrl = String(patientDriveUrlInput?.value || "").trim();
+
+  if (!patientName || !patientPhone) {
+    setStatus(appStatus, "Patient name and mobile number are required.", "error");
+    showToast("Patient name and mobile number are required.", "warn");
+    return;
+  }
+
+  const payload = {
+    patient_name: patientName,
+    patient_phone: patientPhone,
+    drive_folder_url: driveFolderUrl || null
+  };
+
+  try {
+    let savedPatientId = String(patientFormId?.value || "").trim();
+    if (savedPatientId) {
+      const { error } = await supabase
+        .from("patients")
+        .update(payload)
+        .eq("id", savedPatientId);
+      if (error) {
+        throw new Error(error.message);
+      }
+      setStatus(appStatus, "Patient record updated.", "ok");
+      showToast("Patient record updated.", "success");
+    } else {
+      const uid = await currentUserId();
+      if (!uid) {
+        setStatus(appStatus, "Session expired. Please login again.", "error");
+        return;
+      }
+      const { data, error } = await supabase
+        .from("patients")
+        .insert({ ...payload, created_by: uid })
+        .select("id")
+        .single();
+      if (error || !data?.id) {
+        throw new Error(error?.message || "Unable to create patient record.");
+      }
+      savedPatientId = data.id;
+      if (patientFormId) {
+        patientFormId.value = savedPatientId;
+      }
+      setStatus(appStatus, "Patient record created.", "ok");
+      showToast("Patient record created.", "success");
+    }
+
+    selectedPatientRecordId = savedPatientId || null;
+    await loadPatientRecords({ preserveSelection: true });
+  } catch (error) {
+    setStatus(appStatus, `Unable to save patient record: ${error.message}`, "error");
+    showToast(`Unable to save patient record: ${error.message}`, "error");
+  }
+}
+
+async function saveConsultationRecord(event) {
+  event.preventDefault();
+  const patientId = String(patientFormId?.value || selectedPatientRecordId || "").trim();
+  const consultationDate = String(consultationDateInput?.value || "").trim();
+  const notes = String(consultationNotesInput?.value || "").trim();
+  const reportUrl = String(consultationReportUrlInput?.value || "").trim();
+
+  if (!patientId) {
+    setStatus(appStatus, "Select or save a patient before adding consultation history.", "warn");
+    showToast("Save the patient first, then add consultation history.", "warn");
+    return;
+  }
+
+  if (!consultationDate) {
+    setStatus(appStatus, "Consultation date is required.", "warn");
+    showToast("Consultation date is required.", "warn");
+    return;
+  }
+
+  try {
+    const uid = await currentUserId();
+    if (!uid) {
+      setStatus(appStatus, "Session expired. Please login again.", "error");
+      return;
+    }
+    const { error } = await supabase.from("patient_consultations").insert({
+      patient_id: patientId,
+      consultation_date: consultationDate,
+      notes: notes || null,
+      report_url: reportUrl || null,
+      created_by: uid
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+    consultationForm?.reset();
+    setStatus(appStatus, "Consultation saved.", "ok");
+    showToast("Consultation saved.", "success");
+    await selectPatientRecord(patientId);
+  } catch (error) {
+    setStatus(appStatus, `Unable to save consultation: ${error.message}`, "error");
+    showToast(`Unable to save consultation: ${error.message}`, "error");
+  }
+}
+
+async function deleteSelectedPatientRecord() {
+  if (!pendingPatientDeleteId) {
+    closePatientDeleteModal();
+    return;
+  }
+  if (!canDeletePatientRecords()) {
+    closePatientDeleteModal();
+    setStatus(appStatus, "Only dentist can delete patient records.", "error");
+    showToast("Only dentist can delete patient records.", "error");
+    return;
+  }
+
+  const deletingId = pendingPatientDeleteId;
+  const deletingPatient = patientRecordsCache.find((entry) => entry.id === deletingId);
+  closePatientDeleteModal();
+
+  try {
+    const { data, error } = await supabase
+      .from("patients")
+      .delete()
+      .eq("id", deletingId)
+      .select("id")
+      .maybeSingle();
+    if (error) {
+      throw new Error(error.message);
+    }
+    if (!data?.id) {
+      throw new Error("Delete was blocked or the record no longer exists. Please rerun the latest schema and try again.");
+    }
+    selectedPatientRecordId = null;
+    patientForm?.reset();
+    consultationForm?.reset();
+    setStatus(appStatus, "Patient record deleted.", "ok");
+    showToast("Patient record deleted.", "success");
+    await loadPatientRecords({ preserveSelection: false });
+    if (!patientRecordsCache.length) {
+      renderPatientEmptyState("No patient records yet. Create a new patient to get started.");
+    }
+  } catch (error) {
+    setStatus(appStatus, `Unable to delete patient record: ${error.message}`, "error");
+    showToast(`Unable to delete patient record: ${error.message}`, "error");
+    if (deletingPatient) {
+      await selectPatientRecord(deletingPatient.id).catch(() => {});
+    }
+  }
+}
+
 function slotStartMinutes(slotLabel) {
   const match = String(slotLabel || "").match(/^(\d{1,2}):(\d{2})\s(AM|PM)/);
   if (!match) {
@@ -2758,6 +3279,13 @@ async function init() {
       closeNoticeModal();
     }
   });
+  patientDeleteCancel?.addEventListener("click", closePatientDeleteModal);
+  patientDeleteConfirm?.addEventListener("click", deleteSelectedPatientRecord);
+  patientDeleteModal?.addEventListener("click", (event) => {
+    if (event.target === patientDeleteModal) {
+      closePatientDeleteModal();
+    }
+  });
   totpConfirmCancel?.addEventListener("click", () => {
     closeTotpConfirmModal();
     if (pendingTotpResolver) {
@@ -2801,10 +3329,45 @@ async function init() {
     setDefaultDateRange();
     loadDashboard();
   });
+  patientSearchInput?.addEventListener("input", renderPatientList);
+  newPatientBtn?.addEventListener("click", resetPatientForm);
+  patientEditBtn?.addEventListener("click", () => {
+    if (!patientFormId?.value) {
+      resetPatientForm();
+      return;
+    }
+    if (patientDetailEditing) {
+      const selectedPatient = patientRecordsCache.find((entry) => entry.id === patientFormId.value);
+      if (selectedPatient) {
+        selectPatientRecord(selectedPatient.id);
+      }
+      return;
+    }
+    setPatientDetailEditing(true, { isNew: false });
+    patientNameInput?.focus();
+  });
+  patientDeleteBtn?.addEventListener("click", () => {
+    const selectedPatient = patientRecordsCache.find((entry) => entry.id === selectedPatientRecordId);
+    if (!selectedPatient) {
+      return;
+    }
+    openPatientDeleteModal(selectedPatient);
+  });
+  importPatientsBtn?.addEventListener("click", async () => {
+    try {
+      await importPatientsFromAppointments();
+    } catch (error) {
+      setStatus(appStatus, `Unable to import patients: ${error.message}`, "error");
+      showToast("Unable to import patients.", "error");
+    }
+  });
+  patientForm?.addEventListener("submit", savePatientRecord);
+  consultationForm?.addEventListener("submit", saveConsultationRecord);
   if (refreshDashboardBtn) {
     refreshDashboardBtn.addEventListener("click", async () => {
       setStatus(appStatus, "Refreshing data...", "ok");
       await loadDashboard();
+      await loadPatientRecords({ preserveSelection: true }).catch(() => {});
     });
   }
   if (sidebarRefreshBtn) {

@@ -165,6 +165,7 @@
           <a class="dashboard-nav-link active" href="#dashboardOverview">Overview</a>
           <a class="dashboard-nav-link" href="#dashboardSnapshot">Day Snapshot</a>
           <a class="dashboard-nav-link" href="#dashboardAppointments">Appointments</a>
+          <a class="dashboard-nav-link" href="#dashboardPatients">Patient Records</a>
           <a class="dashboard-nav-link" href="#dashboardQuickBook">Book for Patient</a>
           <a class="dashboard-nav-link" href="#dashboardSchedule">Schedule Controls</a>
           <button id="sidebarControlPanelBtn" type="button" class="dashboard-nav-link dashboard-nav-action">Control Panel</button>
@@ -219,6 +220,10 @@
             <a class="dashboard-action-card" href="#dashboardAppointments">
               <strong>Appointments</strong>
               <span>Review pending, approved, rejected, and completed bookings.</span>
+            </a>
+            <a class="dashboard-action-card" href="#dashboardPatients">
+              <strong>Patient Records</strong>
+              <span>Search by patient ID, name, or mobile and review consultation history.</span>
             </a>
             <a class="dashboard-action-card" href="#dashboardSchedule">
               <strong>Schedule Controls</strong>
@@ -289,6 +294,110 @@
           </thead>
           <tbody id="appointmentsBody"></tbody>
         </table>
+        </div>
+        </section>
+
+        <section class="card dashboard-section-card" id="dashboardPatients">
+        <div class="dashboard-section-head">
+          <div>
+            <h3>Patient Records</h3>
+            <p class="lead">Search by patient ID, name, or mobile number. Open any patient to see consultation notes and Drive folder links.</p>
+          </div>
+          <div class="inline-actions">
+            <button id="importPatientsBtn" type="button" class="btn secondary">Import from Appointments</button>
+            <button id="newPatientBtn" type="button" class="btn secondary">New Patient</button>
+          </div>
+        </div>
+
+        <div class="toolbar patient-toolbar">
+          <input id="patientSearchInput" type="search" placeholder="Search by patient ID, name, or mobile number" />
+        </div>
+
+        <div class="patient-records-grid">
+          <section class="dashboard-mini-card">
+            <div class="dashboard-mini-head">
+              <h4>Patients</h4>
+              <span id="patientListSummary" class="lead">No patient records yet.</span>
+            </div>
+            <div class="dashboard-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Mobile</th>
+                  </tr>
+                </thead>
+                <tbody id="patientRecordsBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dashboard-mini-card patient-detail-card">
+            <div id="patientEmptyState" class="patient-empty-state">
+              <h4>Select a patient</h4>
+              <p class="lead">Choose a patient from the list or create a new record to start tracking consultations.</p>
+            </div>
+
+            <div id="patientDetailContent" hidden>
+              <div class="dashboard-mini-head">
+                <div>
+                  <h4 id="patientDetailTitle">Patient Details</h4>
+                  <p id="patientDetailMeta" class="lead"></p>
+                </div>
+                <div class="inline-actions patient-detail-actions">
+                  <button id="patientEditBtn" type="button" class="btn secondary">Edit Details</button>
+                  <button id="patientDeleteBtn" type="button" class="btn secondary danger-soft" hidden>Delete</button>
+                </div>
+              </div>
+
+              <form id="patientForm" class="dashboard-form-stack">
+                <input id="patientFormId" type="hidden" />
+                <div class="toolbar patient-form-grid">
+                  <input id="patientNameInput" type="text" placeholder="Patient name" required />
+                  <input id="patientPhoneInput" type="tel" placeholder="Mobile number" required />
+                  <input id="patientDriveUrlInput" type="url" placeholder="Google Drive folder link (optional)" />
+                  <button id="savePatientBtn" type="submit" class="btn">Save Patient</button>
+                </div>
+              </form>
+
+              <div class="patient-drive-link">
+                <strong>Drive Folder:</strong>
+                <a id="patientDriveLink" href="#" target="_blank" rel="noopener noreferrer">Open folder</a>
+              </div>
+
+              <section class="patient-consultations-panel">
+                <div class="dashboard-mini-head">
+                  <div>
+                    <h4>Consultation History</h4>
+                    <p class="lead">Log consultation dates, notes, and report links for this patient.</p>
+                  </div>
+                </div>
+
+                <form id="consultationForm" class="dashboard-form-stack">
+                  <input id="consultationDateInput" type="date" required />
+                  <textarea id="consultationNotesInput" rows="4" placeholder="Consultation notes"></textarea>
+                  <input id="consultationReportUrlInput" type="url" placeholder="Report / X-ray link (optional)" />
+                  <div class="inline-actions">
+                    <button id="saveConsultationBtn" type="submit" class="btn">Add Consultation</button>
+                  </div>
+                </form>
+
+                <div class="dashboard-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Notes</th>
+                        <th>Report</th>
+                      </tr>
+                    </thead>
+                    <tbody id="patientConsultationsBody"></tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          </section>
         </div>
         </section>
 
@@ -470,6 +579,17 @@
       <p id="noticeMessage" class="lead" style="margin-top: 6px;"></p>
       <div class="modal-actions">
         <button type="button" id="noticeOk" class="btn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="patientDeleteModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="patientDeleteTitle">
+      <h3 id="patientDeleteTitle">Delete Patient Record</h3>
+      <p id="patientDeleteMessage" class="lead" style="margin-top: 6px;">Are you sure you want to delete this patient record? Consultation history linked to this patient will also be removed.</p>
+      <div class="modal-actions">
+        <button type="button" id="patientDeleteCancel" class="btn secondary">Cancel</button>
+        <button type="button" id="patientDeleteConfirm" class="btn danger-soft">Delete</button>
       </div>
     </div>
   </div>

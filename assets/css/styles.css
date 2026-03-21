@@ -2083,9 +2083,120 @@ footer {
   gap: 1rem;
 }
 
+.patient-toolbar {
+  margin-bottom: 1rem;
+}
+
+.patient-records-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.35fr);
+  gap: 1rem;
+}
+
+.patient-detail-card {
+  align-content: start;
+}
+
+.patient-empty-state {
+  display: grid;
+  gap: 0.5rem;
+  min-height: 220px;
+  align-content: center;
+  justify-items: start;
+}
+
+.patient-empty-state h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.patient-empty-state .lead {
+  margin: 0;
+  max-width: 38rem;
+}
+
+.patient-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.patient-form-grid input:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.patient-form-grid button {
+  justify-self: start;
+}
+
+.patient-detail-actions {
+  justify-content: flex-end;
+}
+
+.patient-drive-link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.75rem 0.9rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand) 8%, #fff 92%);
+  border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line) 82%);
+}
+
+.patient-drive-link a {
+  color: var(--brand-dark);
+  font-weight: 700;
+}
+
+.patient-consultations-panel {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 0.25rem;
+}
+
+.patient-row {
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.patient-row:hover,
+.patient-row:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--brand) 8%, #fff 92%);
+}
+
+.patient-row.active {
+  background: color-mix(in srgb, var(--brand) 12%, #fff 88%);
+}
+
+.patient-row td {
+  vertical-align: middle;
+}
+
+.readonly-input {
+  background: color-mix(in srgb, var(--brand) 4%, #f7fbf8 96%);
+  color: rgba(16, 33, 25, 0.85);
+}
+
+.danger-soft {
+  background: color-mix(in srgb, var(--danger) 12%, #fff 88%);
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--line) 72%);
+  color: var(--danger);
+}
+
 @media (max-width: 900px) {
+  .patient-records-grid,
   .dashboard-schedule-history-grid {
     grid-template-columns: 1fr;
+  }
+
+  .patient-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-form-grid input:nth-child(3) {
+    grid-column: auto;
   }
 }
 

@@ -75,6 +75,29 @@ create table if not exists public.clinic_settings (
   constraint single_settings_row check (id = 1)
 );
 
+create sequence if not exists public.svc_patient_code_seq start 1;
+
+create table if not exists public.patients (
+  id uuid primary key default gen_random_uuid(),
+  clinic_patient_code text unique,
+  patient_name text not null,
+  patient_phone text not null,
+  drive_folder_url text,
+  created_by uuid references auth.users (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.patient_consultations (
+  id uuid primary key default gen_random_uuid(),
+  patient_id uuid not null references public.patients (id) on delete cascade,
+  consultation_date date not null,
+  notes text,
+  report_url text,
+  created_by uuid references auth.users (id),
+  created_at timestamptz not null default now()
+);
+
 alter table public.clinic_settings
 add column if not exists booking_window_days int not null default 10;
 
@@ -106,6 +129,32 @@ create trigger trg_appointments_updated_at
 before update on public.appointments
 for each row
 execute function public.set_updated_at();
+
+drop trigger if exists trg_patients_updated_at on public.patients;
+create trigger trg_patients_updated_at
+before update on public.patients
+for each row
+execute function public.set_updated_at();
+
+create or replace function public.assign_svc_patient_code()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.clinic_patient_code is null or btrim(new.clinic_patient_code) = '' then
+    new.clinic_patient_code := 'SVC' || lpad(nextval('public.svc_patient_code_seq')::text, 4, '0');
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_assign_svc_patient_code on public.patients;
+create trigger trg_assign_svc_patient_code
+before insert on public.patients
+for each row
+execute function public.assign_svc_patient_code();
+
+grant usage, select on sequence public.svc_patient_code_seq to authenticated;
 
 create or replace function public.log_appointment_status_change()
 returns trigger
@@ -150,6 +199,8 @@ alter table public.visitor_events enable row level security;
 alter table public.blocked_dates enable row level security;
 alter table public.blocked_slots enable row level security;
 alter table public.clinic_settings enable row level security;
+alter table public.patients enable row level security;
+alter table public.patient_consultations enable row level security;
 
 create or replace function public.is_admin_user()
 returns boolean
@@ -160,6 +211,19 @@ as $$
     select 1
     from public.admin_profiles ap
     where ap.user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.is_primary_admin_user()
+returns boolean
+language sql
+stable
+as $$
+  select exists (
+    select 1
+    from public.admin_profiles ap
+    where ap.user_id = auth.uid()
+      and ap.role = 'dentist'
   );
 $$;
 
@@ -299,6 +363,57 @@ create policy "admin_insert_clinic_settings"
 on public.clinic_settings
 for insert
 to authenticated
+with check (public.is_admin_user());
+
+drop policy if exists "admin_select_patients" on public.patients;
+create policy "admin_select_patients"
+on public.patients
+for select
+to authenticated
+using (public.is_admin_user());
+
+drop policy if exists "admin_insert_patients" on public.patients;
+create policy "admin_insert_patients"
+on public.patients
+for insert
+to authenticated
+with check (public.is_admin_user());
+
+drop policy if exists "admin_update_patients" on public.patients;
+create policy "admin_update_patients"
+on public.patients
+for update
+to authenticated
+using (public.is_admin_user())
+with check (public.is_admin_user());
+
+drop policy if exists "primary_admin_delete_patients" on public.patients;
+create policy "primary_admin_delete_patients"
+on public.patients
+for delete
+to authenticated
+using (public.is_primary_admin_user());
+
+drop policy if exists "admin_select_patient_consultations" on public.patient_consultations;
+create policy "admin_select_patient_consultations"
+on public.patient_consultations
+for select
+to authenticated
+using (public.is_admin_user());
+
+drop policy if exists "admin_insert_patient_consultations" on public.patient_consultations;
+create policy "admin_insert_patient_consultations"
+on public.patient_consultations
+for insert
+to authenticated
+with check (public.is_admin_user());
+
+drop policy if exists "admin_update_patient_consultations" on public.patient_consultations;
+create policy "admin_update_patient_consultations"
+on public.patient_consultations
+for update
+to authenticated
+using (public.is_admin_user())
 with check (public.is_admin_user());
 
 -- Allow authenticated user to check own profile.
