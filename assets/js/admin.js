@@ -91,11 +91,30 @@ const emergencyBlockContent = document.getElementById("emergencyBlockContent");
 const toggleEmergencyBlockBtn = document.getElementById("toggleEmergencyBlockBtn");
 const leaveBlockContent = document.getElementById("leaveBlockContent");
 const toggleLeaveBlockBtn = document.getElementById("toggleLeaveBlockBtn");
+const blockedSlotsHistoryContent = document.getElementById("blockedSlotsHistoryContent");
+const toggleBlockedSlotsHistoryBtn = document.getElementById("toggleBlockedSlotsHistoryBtn");
+const blockedDatesHistoryContent = document.getElementById("blockedDatesHistoryContent");
+const toggleBlockedDatesHistoryBtn = document.getElementById("toggleBlockedDatesHistoryBtn");
 
 const kpiVisits = document.getElementById("kpiVisits");
 const kpiBookings = document.getElementById("kpiBookings");
 const kpiPending = document.getElementById("kpiPending");
 const kpiApproval = document.getElementById("kpiApproval");
+const kpiVisitsMirror = document.getElementById("kpiVisitsMirror");
+const kpiBookingsMirror = document.getElementById("kpiBookingsMirror");
+const kpiPendingMirror = document.getElementById("kpiPendingMirror");
+const kpiApprovalMirror = document.getElementById("kpiApprovalMirror");
+const sidebarRefreshBtn = document.getElementById("sidebarRefreshBtn");
+const sidebarLogoutBtn = document.getElementById("sidebarLogoutBtn");
+const sidebarControlPanelBtn = document.getElementById("sidebarControlPanelBtn");
+const dashboardNavLinks = Array.from(document.querySelectorAll(".dashboard-nav-link"));
+const dashboardSectionIds = [
+  "dashboardOverview",
+  "dashboardSnapshot",
+  "dashboardAppointments",
+  "dashboardQuickBook",
+  "dashboardSchedule"
+];
 
 const quickTabs = document.querySelectorAll(".quick-tab");
 const timelineDate = document.getElementById("timelineDate");
@@ -2093,6 +2112,67 @@ function computeKpi(appointments, visits) {
   kpiBookings.textContent = String(total);
   kpiPending.textContent = String(pending);
   kpiApproval.textContent = approvalRate;
+  if (kpiVisitsMirror) {
+    kpiVisitsMirror.textContent = String(visits);
+  }
+  if (kpiBookingsMirror) {
+    kpiBookingsMirror.textContent = String(total);
+  }
+  if (kpiPendingMirror) {
+    kpiPendingMirror.textContent = String(pending);
+  }
+  if (kpiApprovalMirror) {
+    kpiApprovalMirror.textContent = approvalRate;
+  }
+}
+
+function setActiveDashboardNav(targetId) {
+  dashboardNavLinks.forEach((link) => {
+    const active = link.getAttribute("href") === `#${targetId}`;
+    link.classList.toggle("active", active);
+    link.setAttribute("aria-current", active ? "page" : "false");
+  });
+}
+
+function showDashboardSection(targetId, options = {}) {
+  const { updateHash = false } = options;
+  const normalizedTargetId = dashboardSectionIds.includes(targetId) ? targetId : "dashboardOverview";
+  dashboardSectionIds.forEach((sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.hidden = sectionId !== normalizedTargetId;
+    }
+  });
+  setActiveDashboardNav(normalizedTargetId);
+  if (updateHash && window.location.hash !== `#${normalizedTargetId}`) {
+    history.replaceState(null, "", `#${normalizedTargetId}`);
+  }
+}
+
+function setupDashboardNavigation() {
+  if (!dashboardNavLinks.length) {
+    return;
+  }
+  document.querySelectorAll('a[href^="#dashboard"]').forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const targetId = link.getAttribute("href")?.slice(1);
+      if (!targetId) {
+        return;
+      }
+      event.preventDefault();
+      showDashboardSection(targetId, { updateHash: true });
+    });
+  });
+  const initialTarget = dashboardSectionIds.includes(window.location.hash.slice(1))
+    ? window.location.hash.slice(1)
+    : "dashboardOverview";
+  showDashboardSection(initialTarget);
+  window.addEventListener("hashchange", () => {
+    const nextTarget = dashboardSectionIds.includes(window.location.hash.slice(1))
+      ? window.location.hash.slice(1)
+      : "dashboardOverview";
+    showDashboardSection(nextTarget);
+  });
 }
 
 function slotStartMinutes(slotLabel) {
@@ -2147,6 +2227,22 @@ function setLeaveBlockCollapsed(collapsed) {
   }
   leaveBlockContent.hidden = collapsed;
   setCollapseToggleState(toggleLeaveBlockBtn, collapsed, "holiday and leave blocking");
+}
+
+function setBlockedSlotsHistoryCollapsed(collapsed) {
+  if (!blockedSlotsHistoryContent || !toggleBlockedSlotsHistoryBtn) {
+    return;
+  }
+  blockedSlotsHistoryContent.hidden = collapsed;
+  setCollapseToggleState(toggleBlockedSlotsHistoryBtn, collapsed, "blocked sessions history");
+}
+
+function setBlockedDatesHistoryCollapsed(collapsed) {
+  if (!blockedDatesHistoryContent || !toggleBlockedDatesHistoryBtn) {
+    return;
+  }
+  blockedDatesHistoryContent.hidden = collapsed;
+  setCollapseToggleState(toggleBlockedDatesHistoryBtn, collapsed, "blocked dates history");
 }
 
 async function loadTimeline() {
@@ -2406,6 +2502,7 @@ async function init() {
     });
   }
   openSettingsBtn.addEventListener("click", openSettingsModal);
+  sidebarControlPanelBtn?.addEventListener("click", openSettingsModal);
   settingsCancelBtn.addEventListener("click", closeSettingsModal);
   settingsCloseBtn?.addEventListener("click", closeSettingsModal);
   settingsForm.addEventListener("submit", saveClinicSettings);
@@ -2460,6 +2557,20 @@ async function init() {
     });
   }
   setLeaveBlockCollapsed(mobileAdminQuery.matches);
+  if (toggleBlockedSlotsHistoryBtn) {
+    toggleBlockedSlotsHistoryBtn.addEventListener("click", () => {
+      const currentlyCollapsed = !blockedSlotsHistoryContent || blockedSlotsHistoryContent.hidden;
+      setBlockedSlotsHistoryCollapsed(!currentlyCollapsed);
+    });
+  }
+  setBlockedSlotsHistoryCollapsed(mobileAdminQuery.matches);
+  if (toggleBlockedDatesHistoryBtn) {
+    toggleBlockedDatesHistoryBtn.addEventListener("click", () => {
+      const currentlyCollapsed = !blockedDatesHistoryContent || blockedDatesHistoryContent.hidden;
+      setBlockedDatesHistoryCollapsed(!currentlyCollapsed);
+    });
+  }
+  setBlockedDatesHistoryCollapsed(mobileAdminQuery.matches);
 
   slotBlockDate.addEventListener("change", () => {
     fillSlotSelect(slotBlockLabel, slotBlockDate.value || todayYmdInKolkata());
@@ -2696,6 +2807,9 @@ async function init() {
       await loadDashboard();
     });
   }
+  if (sidebarRefreshBtn) {
+    sidebarRefreshBtn.addEventListener("click", () => refreshDashboardBtn?.click());
+  }
   if (purgeDataBtn) {
     purgeDataBtn.addEventListener("click", resetPastData);
   }
@@ -2722,6 +2836,8 @@ async function init() {
     currentAdminProfile = null;
     window.location.reload();
   });
+  sidebarLogoutBtn?.addEventListener("click", () => document.getElementById("logout")?.click());
+  setupDashboardNavigation();
 
   blockForm.addEventListener("submit", async (event) => {
     event.preventDefault();

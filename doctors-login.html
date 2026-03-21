@@ -155,36 +155,84 @@
       <div class="status" id="loginStatus" aria-live="polite"></div>
     </section>
 
-    <section id="dashboard" hidden>
-      <div class="card">
-        <div style="display:flex; justify-content: space-between; gap:8px; align-items:center; flex-wrap:wrap;">
-          <h2 style="font-size:1.8rem;">Appointments Dashboard</h2>
-          <div class="inline-actions">
-            <button id="refreshDashboardBtn" class="btn secondary" type="button">Refresh</button>
-            <button id="openSettingsBtn" class="btn secondary" type="button" aria-label="Open control panel" title="Control Panel">Control Panel ⚙</button>
-            <button id="logout" class="btn secondary" type="button">Logout</button>
-          </div>
+    <section id="dashboard" hidden class="dashboard-layout">
+      <aside class="dashboard-sidebar card">
+        <div class="dashboard-sidebar-brand">
+          <h2>Dental Desk</h2>
+          <p>Approvals, scheduling, and patient flow in one clean workspace.</p>
         </div>
-        <div class="status" id="appStatus" aria-live="polite"></div>
-      </div>
+        <nav class="dashboard-nav" aria-label="Dashboard sections">
+          <a class="dashboard-nav-link active" href="#dashboardOverview">Overview</a>
+          <a class="dashboard-nav-link" href="#dashboardSnapshot">Day Snapshot</a>
+          <a class="dashboard-nav-link" href="#dashboardAppointments">Appointments</a>
+          <a class="dashboard-nav-link" href="#dashboardQuickBook">Book for Patient</a>
+          <a class="dashboard-nav-link" href="#dashboardSchedule">Schedule Controls</a>
+          <button id="sidebarControlPanelBtn" type="button" class="dashboard-nav-link dashboard-nav-action">Control Panel</button>
+        </nav>
+        <div class="dashboard-sidebar-footer">
+          <button id="sidebarRefreshBtn" class="btn secondary" type="button">Refresh</button>
+          <button id="sidebarLogoutBtn" class="btn secondary" type="button">Logout</button>
+        </div>
+      </aside>
 
-      <div class="card" style="margin-top: 12px;">
-        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-          <h3>Analytics Snapshot</h3>
-          <div class="inline-actions">
-            <a class="btn secondary" href="./analytics.html">View Insights ↗</a>
+      <div class="dashboard-main">
+        <section class="card dashboard-hero-card" id="dashboardOverview">
+          <div class="dashboard-hero-top">
+            <div>
+              <h2 class="dashboard-title">Appointments Dashboard</h2>
+              <p class="lead dashboard-subtitle">Stay on top of bookings, pending approvals, and clinic availability without the clutter.</p>
+            </div>
+            <div class="inline-actions dashboard-hero-actions">
+              <button id="refreshDashboardBtn" class="btn secondary" type="button">Refresh</button>
+              <button id="openSettingsBtn" class="btn secondary" type="button" aria-label="Open control panel" title="Control Panel">Control Panel ⚙</button>
+              <button id="logout" class="btn secondary" type="button">Logout</button>
+            </div>
           </div>
-        </div>
-        <div class="kpi-grid">
-          <div class="kpi"><div class="label">Page Visits</div><div class="value" id="kpiVisits">0</div></div>
-          <div class="kpi"><div class="label">Bookings</div><div class="value" id="kpiBookings">0</div></div>
-          <div class="kpi"><div class="label">Pending</div><div class="value" id="kpiPending">0</div></div>
-          <div class="kpi"><div class="label">Approval Rate</div><div class="value" id="kpiApproval">0%</div></div>
-        </div>
-      </div>
+          <div class="status" id="appStatus" aria-live="polite"></div>
+          <div class="dashboard-kpi-strip">
+            <div class="dashboard-kpi-card">
+              <div class="label">Page Visits</div>
+              <div class="value" id="kpiVisits">0</div>
+              <p>Total website visits captured so far.</p>
+            </div>
+            <div class="dashboard-kpi-card">
+              <div class="label">Bookings</div>
+              <div class="value" id="kpiBookings">0</div>
+              <p>All appointment requests received.</p>
+            </div>
+            <div class="dashboard-kpi-card">
+              <div class="label">Pending</div>
+              <div class="value" id="kpiPending">0</div>
+              <p>Requests still waiting for review.</p>
+            </div>
+            <div class="dashboard-kpi-card">
+              <div class="label">Approval Rate</div>
+              <div class="value" id="kpiApproval">0%</div>
+              <p>Approved requests compared with all bookings.</p>
+            </div>
+          </div>
+          <div class="dashboard-action-grid">
+            <a class="dashboard-action-card" href="#dashboardSnapshot">
+              <strong>Day Snapshot</strong>
+              <span>Jump to today’s slot view and live schedule map.</span>
+            </a>
+            <a class="dashboard-action-card" href="#dashboardAppointments">
+              <strong>Appointments</strong>
+              <span>Review pending, approved, rejected, and completed bookings.</span>
+            </a>
+            <a class="dashboard-action-card" href="#dashboardSchedule">
+              <strong>Schedule Controls</strong>
+              <span>Block sessions, mark leave dates, and manage operational availability.</span>
+            </a>
+            <a class="dashboard-action-card" href="./analytics.html">
+              <strong>Analytics Insights ↗</strong>
+              <span>Open deeper trend and performance insights in a dedicated page.</span>
+            </a>
+          </div>
+        </section>
 
-      <div class="card" style="margin-top: 12px;">
-        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+        <section class="card dashboard-section-card" id="dashboardSnapshot">
+        <div class="dashboard-section-head">
           <h3>Day Snapshot</h3>
           <div class="inline-actions">
             <input id="timelineDate" type="date" />
@@ -196,10 +244,10 @@
           <p id="timelineSummary" class="lead" style="margin: 8px 0 10px;"></p>
           <div id="timelineBody" class="timeline-grid"></div>
         </div>
-      </div>
+        </section>
 
-      <div class="card" style="margin-top: 12px; overflow-x:auto;">
-        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+        <section class="card dashboard-section-card" id="dashboardAppointments" style="overflow-x:auto;">
+        <div class="dashboard-section-head">
           <h3>Appointments</h3>
           <div class="inline-actions">
             <button id="toggleAppointmentsBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse appointments" title="Collapse appointments">▴</button>
@@ -242,10 +290,15 @@
           <tbody id="appointmentsBody"></tbody>
         </table>
         </div>
-      </div>
+        </section>
 
-      <div class="card" style="margin-top: 12px;">
-        <h3 style="margin-bottom:10px;">Book for Patient</h3>
+        <section class="card dashboard-section-card" id="dashboardQuickBook">
+        <div class="dashboard-section-head">
+          <div>
+            <h3>Book for Patient</h3>
+            <p class="lead">Quick staff-assisted booking with WhatsApp confirmation flow.</p>
+          </div>
+        </div>
         <form id="manualBookingForm">
           <div class="toolbar">
             <input id="manualName" type="text" placeholder="Patient name" required />
@@ -266,74 +319,98 @@
             <button type="submit" class="btn">Book & Notify on WhatsApp</button>
           </div>
         </form>
-      </div>
+        </section>
 
-      <div class="card" style="margin-top: 12px;">
-        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-          <h3>Emergency Session Blocking</h3>
-          <div class="inline-actions">
-            <button id="toggleEmergencyBlockBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse emergency session blocking" title="Collapse emergency session blocking">▴</button>
+        <section class="card dashboard-section-card" id="dashboardSchedule">
+          <div class="dashboard-section-head">
+            <div>
+              <h3>Schedule Controls</h3>
+              <p class="lead">Block sessions or leave dates up top, then review history without extra clutter.</p>
+            </div>
           </div>
-        </div>
-        <div id="emergencyBlockContent">
-        <form id="slotBlockForm">
-          <div class="toolbar">
-            <input id="slotBlockDate" type="date" required />
-            <button id="slotPickerOpenBtn" type="button" class="btn secondary">Select Sessions</button>
-            <p id="slotPickerSummary" class="lead">No session selected</p>
-            <select id="slotBlockLabel" multiple size="6" aria-label="Select one or more session slots" hidden></select>
-            <input id="slotBlockReason" type="text" placeholder="Reason (optional)" />
-            <button type="submit" class="btn">Block Session</button>
-          </div>
-          <p class="lead" style="margin-top:8px;">Use Select Sessions to choose one or more time slots, then block in one go.</p>
-        </form>
-        <div style="margin-top: 10px; overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Session</th>
-                <th>Reason</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="blockedSlotsBody"></tbody>
-          </table>
-        </div>
-        </div>
-      </div>
 
-      <div class="card" style="margin-top: 12px;">
-        <div style="display:flex; justify-content: space-between; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
-          <h3>Holiday / Leave Blocking</h3>
-          <div class="inline-actions">
-            <button id="toggleLeaveBlockBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse holiday and leave blocking" title="Collapse holiday and leave blocking">▴</button>
+          <div class="dashboard-schedule-grid">
+            <div class="dashboard-mini-card">
+              <div class="dashboard-mini-head">
+                <h4>Emergency Session Blocking</h4>
+                <button id="toggleEmergencyBlockBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse emergency session blocking" title="Collapse emergency session blocking">▴</button>
+              </div>
+              <div id="emergencyBlockContent">
+                <form id="slotBlockForm" class="dashboard-form-stack">
+                  <div class="toolbar">
+                    <input id="slotBlockDate" type="date" required />
+                    <button id="slotPickerOpenBtn" type="button" class="btn secondary">Select Sessions</button>
+                    <p id="slotPickerSummary" class="lead">No session selected</p>
+                    <select id="slotBlockLabel" multiple size="6" aria-label="Select one or more session slots" hidden></select>
+                    <input id="slotBlockReason" type="text" placeholder="Reason (optional)" />
+                    <button type="submit" class="btn">Block Session</button>
+                  </div>
+                  <p class="lead">Use Select Sessions to choose one or more time slots, then block in one go.</p>
+                </form>
+              </div>
+            </div>
+
+            <div class="dashboard-mini-card">
+              <div class="dashboard-mini-head">
+                <h4>Holiday / Leave Blocking</h4>
+                <button id="toggleLeaveBlockBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse holiday and leave blocking" title="Collapse holiday and leave blocking">▴</button>
+              </div>
+              <div id="leaveBlockContent">
+                <form id="blockForm" class="dashboard-form-stack">
+                  <div class="toolbar">
+                    <input id="blockFromDate" type="date" required />
+                    <input id="blockToDate" type="date" required />
+                    <input id="blockReason" type="text" placeholder="Reason (optional)" />
+                    <div></div>
+                    <button id="addBlockBtn" type="submit" class="btn">Block Dates</button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
-        </div>
-        <div id="leaveBlockContent">
-        <form id="blockForm">
-          <div class="toolbar">
-            <input id="blockFromDate" type="date" required />
-            <input id="blockToDate" type="date" required />
-            <input id="blockReason" type="text" placeholder="Reason (optional)" />
-            <div></div>
-            <button id="addBlockBtn" type="submit" class="btn">Block Dates</button>
+
+          <div class="dashboard-schedule-history-grid">
+            <div class="dashboard-mini-card">
+              <div class="dashboard-mini-head">
+                <h4>Blocked Sessions History</h4>
+                <button id="toggleBlockedSlotsHistoryBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse blocked sessions history" title="Collapse blocked sessions history">▴</button>
+              </div>
+              <div class="dashboard-table-wrap" id="blockedSlotsHistoryContent">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Session</th>
+                      <th>Reason</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="blockedSlotsBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="dashboard-mini-card">
+              <div class="dashboard-mini-head">
+                <h4>Blocked Dates History</h4>
+                <button id="toggleBlockedDatesHistoryBtn" type="button" class="icon-btn collapse-toggle" aria-label="Collapse blocked dates history" title="Collapse blocked dates history">▴</button>
+              </div>
+              <div class="dashboard-table-wrap" id="blockedDatesHistoryContent">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>From</th>
+                      <th>To</th>
+                      <th>Reason</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="blockedDatesBody"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </form>
-        <div style="margin-top: 10px; overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>From</th>
-                <th>To</th>
-                <th>Reason</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="blockedDatesBody"></tbody>
-          </table>
-        </div>
-        </div>
+        </section>
       </div>
     </section>
   </main>
