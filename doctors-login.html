@@ -356,44 +356,38 @@
                 <div class="toolbar patient-form-grid">
                   <input id="patientNameInput" type="text" placeholder="Patient name" required />
                   <input id="patientPhoneInput" type="tel" placeholder="Mobile number" required />
-                  <input id="patientDriveUrlInput" type="url" placeholder="Google Drive folder link (optional)" />
+                  <input id="patientDriveUrlInput" type="hidden" />
                   <button id="savePatientBtn" type="submit" class="btn">Save Patient</button>
                 </div>
               </form>
 
               <div class="patient-drive-link">
                 <strong>Drive Folder:</strong>
-                <a id="patientDriveLink" href="#" target="_blank" rel="noopener noreferrer">Open folder</a>
+                <a id="patientDriveLink" href="#" target="_blank" rel="noopener noreferrer">Access folder</a>
               </div>
 
               <section class="patient-consultations-panel">
                 <div class="dashboard-mini-head">
                   <div>
                     <h4>Consultation History</h4>
-                    <p class="lead">Log consultation dates, notes, and report links for this patient.</p>
+                    <p class="lead">Log consultation dates, notes, and uploaded docs for this patient.</p>
                   </div>
                 </div>
 
                 <form id="consultationForm" class="dashboard-form-stack">
                   <input id="consultationDateInput" type="date" required />
                   <textarea id="consultationNotesInput" rows="4" placeholder="Consultation notes"></textarea>
-                  <input id="consultationReportUrlInput" type="url" placeholder="Report / X-ray link (optional)" />
+                  <input id="consultationReportUrlInput" type="hidden" />
+                  <input id="consultationPrescriptionFileInput" type="file" accept="image/*,.pdf,.jpg,.jpeg,.png,.webp" hidden />
                   <div class="inline-actions">
+                    <button id="uploadPrescriptionBtn" type="button" class="btn secondary">Upload Docs</button>
                     <button id="saveConsultationBtn" type="submit" class="btn">Add Consultation</button>
                   </div>
+                  <p id="consultationUploadStatus" class="lead" hidden></p>
                 </form>
 
-                <div class="dashboard-table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Notes</th>
-                        <th>Report</th>
-                      </tr>
-                    </thead>
-                    <tbody id="patientConsultationsBody"></tbody>
-                  </table>
+                <div id="patientConsultationsBody" class="patient-consultation-list">
+                  <p class="lead">Save the patient first, then add consultation history.</p>
                 </div>
               </section>
             </div>

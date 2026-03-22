@@ -1,4 +1,4 @@
-﻿import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   SERVICES,
   SLOT_DURATION_MINUTES,
@@ -138,6 +138,9 @@ const consultationForm = document.getElementById("consultationForm");
 const consultationDateInput = document.getElementById("consultationDateInput");
 const consultationNotesInput = document.getElementById("consultationNotesInput");
 const consultationReportUrlInput = document.getElementById("consultationReportUrlInput");
+const consultationPrescriptionFileInput = document.getElementById("consultationPrescriptionFileInput");
+const uploadPrescriptionBtn = document.getElementById("uploadPrescriptionBtn");
+const consultationUploadStatus = document.getElementById("consultationUploadStatus");
 const patientConsultationsBody = document.getElementById("patientConsultationsBody");
 
 const quickTabs = document.querySelectorAll(".quick-tab");
@@ -225,6 +228,7 @@ let patientRecordsCache = [];
 let selectedPatientRecordId = null;
 let patientDetailEditing = false;
 let pendingPatientDeleteId = null;
+let consultationUploadInFlight = false;
 const FORGOT_COOLDOWN_SECONDS = 90;
 const FORGOT_COOLDOWN_KEY = "sarvam_forgot_cooldown_until";
 const LIVE_ALERT_POLL_MS = 10000;
@@ -1289,7 +1293,7 @@ function openBlockConflictModal(action) {
     action.conflicts.forEach((appointment) => {
       const item = document.createElement("div");
       item.className = "conflict-item";
-      item.innerHTML = `<strong>${appointment.patient_name}</strong><small>${appointment.preferred_date} • ${appointment.preferred_slot} • ${appointment.service}</small>`;
+      item.innerHTML = `<strong>${appointment.patient_name}</strong><small>${appointment.preferred_date} | ${appointment.preferred_slot} | ${appointment.service}</small>`;
       blockConflictList.appendChild(item);
     });
   }
@@ -1448,7 +1452,7 @@ function setCollapseToggleState(button, collapsed, label) {
   if (!button) {
     return;
   }
-  button.textContent = collapsed ? "▾" : "▴";
+  button.textContent = collapsed ? "v" : "^";
   const action = collapsed ? "Expand" : "Collapse";
   button.setAttribute("aria-label", `${action} ${label}`);
   button.setAttribute("title", `${action} ${label}`);
@@ -1668,6 +1672,249 @@ async function getAccessToken() {
     throw new Error("Session expired. Please login again.");
   }
   return token;
+}
+
+function setConsultationUploadState(message = "", tone = "", options = {}) {
+  if (!consultationUploadStatus) {
+    return;
+  }
+  consultationUploadStatus.hidden = !message;
+  consultationUploadStatus.textContent = message || "";
+  consultationUploadStatus.classList.remove("status-error", "status-ok", "status-warn", "status-muted");
+  if (tone) {
+    consultationUploadStatus.classList.add(`status-${tone}`);
+  } else {
+    consultationUploadStatus.classList.add("status-muted");
+  }
+  if (uploadPrescriptionBtn) {
+    uploadPrescriptionBtn.disabled = Boolean(options.busy);
+    uploadPrescriptionBtn.textContent = options.busy ? "Uploading..." : "Upload Docs";
+  }
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Unable to read the selected file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePrescriptionUpload(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  const selectedPatient = patientRecordsCache.find((entry) => entry.id === String(patientFormId?.value || selectedPatientRecordId || "").trim()) || null;
+
+  if (!String(patientFormId?.value || selectedPatientRecordId || "").trim()) {
+    setStatus(appStatus, "Save or select a patient before uploading docs.", "warn");
+    showToast("Save the patient first, then upload docs.", "warn");
+    consultationPrescriptionFileInput.value = "";
+    return;
+  }
+
+  if (consultationUploadInFlight) {
+    consultationPrescriptionFileInput.value = "";
+    return;
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    setConsultationUploadState("Choose a file smaller than 8 MB.", "error");
+    showToast("Choose a file smaller than 8 MB.", "warn");
+    consultationPrescriptionFileInput.value = "";
+    return;
+  }
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+  if (file.type && !allowedTypes.includes(file.type)) {
+    setConsultationUploadState("Only JPG, PNG, WEBP, GIF, or PDF files are supported.", "error");
+    showToast("Unsupported file type.", "warn");
+    consultationPrescriptionFileInput.value = "";
+    return;
+  }
+
+  consultationUploadInFlight = true;
+  setConsultationUploadState(`Uploading ${file.name} to Google Drive...`, "warn", { busy: true });
+
+  try {
+    const token = await getAccessToken();
+    const dataUrl = await readFileAsDataUrl(file);
+    const base64Payload = dataUrl.split(",")[1];
+    if (!base64Payload) {
+      throw new Error("Unable to prepare the selected file for upload.");
+    }
+
+    const response = await fetch("/api/upload-prescription", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        dataBase64: base64Payload,
+        patientId: String(patientFormId?.value || selectedPatientRecordId || "").trim(),
+        patientCode: selectedPatient?.clinic_patient_code || null,
+        patientName: selectedPatient?.patient_name || String(patientNameInput?.value || "").trim() || null,
+        patientPhone: selectedPatient?.patient_phone || String(patientPhoneInput?.value || "").trim() || null,
+        consultationDate: String(consultationDateInput?.value || "").trim() || null
+      })
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload?.driveUrl) {
+      throw new Error(payload?.error || "Upload failed.");
+    }
+
+    if (consultationReportUrlInput) {
+      consultationReportUrlInput.value = payload.driveUrl;
+    }
+    if (payload.folderUrl) {
+      if (patientDriveUrlInput) {
+        patientDriveUrlInput.value = payload.folderUrl;
+      }
+      if (patientDriveLink) {
+        patientDriveLink.href = payload.folderUrl;
+        patientDriveLink.hidden = false;
+      }
+      if (selectedPatient) {
+        selectedPatient.drive_folder_url = payload.folderUrl;
+      }
+    }
+
+    setConsultationUploadState(`Uploaded to Google Drive: ${file.name}`, "ok");
+    showToast("Docs uploaded successfully.", "success");
+  } catch (error) {
+    setConsultationUploadState(`Upload failed: ${error.message}`, "error");
+    showToast(`Upload failed: ${error.message}`, "error");
+  } finally {
+    consultationUploadInFlight = false;
+    if (uploadPrescriptionBtn) {
+      uploadPrescriptionBtn.disabled = false;
+      uploadPrescriptionBtn.textContent = "Upload Docs";
+    }
+    if (consultationPrescriptionFileInput) {
+      consultationPrescriptionFileInput.value = "";
+    }
+  }
+}
+
+async function ensurePatientDriveFolder(patient) {
+  if (!patient?.id || !patient.clinic_patient_code || !patient.patient_phone) {
+    throw new Error("Patient details are incomplete. Save the patient before accessing the folder.");
+  }
+
+  const token = await getAccessToken();
+  const response = await fetch("/api/ensure-patient-folder", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      patientId: patient.id,
+      patientCode: patient.clinic_patient_code,
+      patientPhone: patient.patient_phone
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload?.folderUrl) {
+    throw new Error(payload?.error || "Unable to access patient folder.");
+  }
+
+  patient.drive_folder_url = payload.folderUrl;
+  if (patientDriveUrlInput) {
+    patientDriveUrlInput.value = payload.folderUrl;
+  }
+  if (patientDriveLink) {
+    patientDriveLink.href = payload.folderUrl;
+    patientDriveLink.hidden = false;
+    patientDriveLink.textContent = "Access folder";
+  }
+
+  await supabase
+    .from("patients")
+    .update({ drive_folder_url: payload.folderUrl })
+    .eq("id", patient.id);
+
+  return payload.folderUrl;
+}
+
+function formatDisplayDate(value) {
+  const [year, month, day] = String(value || "").split("-");
+  if (!year || !month || !day) {
+    return value || "-";
+  }
+  return `${day}-${month}-${year}`;
+}
+
+function createConsultationItem(consultation) {
+  const item = document.createElement("article");
+  item.className = "patient-consultation-card";
+
+  const header = document.createElement("button");
+  header.type = "button";
+  header.className = "patient-consultation-toggle";
+
+  const left = document.createElement("div");
+  left.className = "patient-consultation-copy";
+  const title = document.createElement("strong");
+  title.textContent = formatDisplayDate(consultation.consultation_date);
+  const preview = document.createElement("span");
+  const previewText = consultation.notes ? String(consultation.notes).replace(/\s+/g, " ").trim() : "No notes added.";
+  preview.textContent = previewText.length > 96 ? `${previewText.slice(0, 96)}...` : previewText;
+  left.append(title, preview);
+
+  const right = document.createElement("span");
+  right.className = "patient-consultation-chevron";
+  right.textContent = ">";
+  header.append(left, right);
+
+  const body = document.createElement("div");
+  body.className = "patient-consultation-body";
+  body.hidden = true;
+
+  const notesBlock = document.createElement("div");
+  notesBlock.className = "patient-consultation-detail";
+  const notesTitle = document.createElement("strong");
+  notesTitle.textContent = "Notes";
+  const notesText = document.createElement("p");
+  notesText.textContent = consultation.notes || "-";
+  notesBlock.append(notesTitle, notesText);
+
+  const docsBlock = document.createElement("div");
+  docsBlock.className = "patient-consultation-detail";
+  const docsTitle = document.createElement("strong");
+  docsTitle.textContent = "Docs";
+  const docsText = document.createElement("p");
+  if (consultation.report_url) {
+    const docsLink = document.createElement("a");
+    docsLink.href = consultation.report_url;
+    docsLink.target = "_blank";
+    docsLink.rel = "noopener noreferrer";
+    docsLink.textContent = "Open uploaded docs";
+    docsText.appendChild(docsLink);
+  } else {
+    docsText.textContent = "No docs uploaded.";
+  }
+  docsBlock.append(docsTitle, docsText);
+
+  body.append(notesBlock, docsBlock);
+
+  header.addEventListener("click", () => {
+    const collapsed = !body.hidden;
+    body.hidden = collapsed;
+    item.classList.toggle("open", !collapsed);
+    right.textContent = collapsed ? ">" : "v";
+  });
+
+  item.append(header, body);
+  return item;
 }
 
 async function handleAddUser(event) {
@@ -2237,7 +2484,7 @@ function setupDashboardNavigation() {
 
 function formatPatientDetailMeta(patient) {
   const pieces = [patient.clinic_patient_code, patient.patient_phone];
-  return pieces.filter(Boolean).join(" • ");
+  return pieces.filter(Boolean).join(" | ");
 }
 
 function setPatientDetailEditing(editing, options = {}) {
@@ -2323,9 +2570,9 @@ function renderPatientList() {
     tr.className = patient.id === selectedPatientRecordId ? "patient-row active" : "patient-row";
     tr.tabIndex = 0;
     tr.innerHTML = `
-      <td>${patient.clinic_patient_code || "—"}</td>
-      <td>${patient.patient_name || "—"}</td>
-      <td>${patient.patient_phone || "—"}</td>
+      <td>${patient.clinic_patient_code || "-"}</td>
+      <td>${patient.patient_name || "-"}</td>
+      <td>${patient.patient_phone || "-"}</td>
     `;
     const openPatient = () => {
       selectPatientRecord(patient.id);
@@ -2344,6 +2591,7 @@ function renderPatientList() {
 function resetPatientForm() {
   patientForm?.reset();
   consultationForm?.reset();
+  setConsultationUploadState("", "");
   if (consultationDateInput) {
     consultationDateInput.value = todayYmdInKolkata();
   }
@@ -2365,19 +2613,13 @@ function resetPatientForm() {
     patientDetailMeta.textContent = "Create a patient profile, then start logging consultations.";
   }
   if (patientDriveLink) {
-    patientDriveLink.hidden = true;
+    patientDriveLink.hidden = false;
     patientDriveLink.removeAttribute("href");
-    patientDriveLink.textContent = "Open folder";
+    patientDriveLink.textContent = "Access folder";
   }
   setPatientDetailEditing(true, { isNew: true });
   if (patientConsultationsBody) {
-    patientConsultationsBody.innerHTML = "";
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = 3;
-    td.textContent = "Save the patient first, then add consultation history.";
-    tr.appendChild(td);
-    patientConsultationsBody.appendChild(tr);
+    patientConsultationsBody.innerHTML = `<p class="lead">Save the patient first, then add consultation history and upload docs.</p>`;
   }
   patientNameInput?.focus();
 }
@@ -2388,6 +2630,7 @@ function renderPatientDetail(patient, consultations = []) {
     return;
   }
   consultationForm?.reset();
+  setConsultationUploadState("", "");
   if (consultationDateInput) {
     consultationDateInput.value = todayYmdInKolkata();
   }
@@ -2419,35 +2662,21 @@ function renderPatientDetail(patient, consultations = []) {
     if (patient.drive_folder_url) {
       patientDriveLink.hidden = false;
       patientDriveLink.href = patient.drive_folder_url;
-      patientDriveLink.textContent = "Open folder";
+      patientDriveLink.textContent = "Access folder";
     } else {
-      patientDriveLink.hidden = true;
+      patientDriveLink.hidden = false;
       patientDriveLink.removeAttribute("href");
-      patientDriveLink.textContent = "No folder linked";
+      patientDriveLink.textContent = "Access folder";
     }
   }
   setPatientDetailEditing(false, { isNew: false });
   if (patientConsultationsBody) {
     patientConsultationsBody.innerHTML = "";
     if (!consultations.length) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 3;
-      td.textContent = "No consultation history yet.";
-      tr.appendChild(td);
-      patientConsultationsBody.appendChild(tr);
+      patientConsultationsBody.innerHTML = `<p class="lead">No consultation history yet.</p>`;
     } else {
       consultations.forEach((consultation) => {
-        const tr = document.createElement("tr");
-        const reportCell = consultation.report_url
-          ? `<a href="${consultation.report_url}" target="_blank" rel="noopener noreferrer">Open link</a>`
-          : "—";
-        tr.innerHTML = `
-          <td>${consultation.consultation_date || "—"}</td>
-          <td>${consultation.notes || "—"}</td>
-          <td>${reportCell}</td>
-        `;
-        patientConsultationsBody.appendChild(tr);
+        patientConsultationsBody.appendChild(createConsultationItem(consultation));
       });
     }
   }
@@ -2592,8 +2821,20 @@ async function savePatientRecord(event) {
       if (patientFormId) {
         patientFormId.value = savedPatientId;
       }
-      setStatus(appStatus, "Patient record created.", "ok");
+      const createdPatient = {
+        id: savedPatientId,
+        clinic_patient_code: null,
+        patient_name: patientName,
+        patient_phone: patientPhone,
+        drive_folder_url: null
+      };
+      setStatus(appStatus, "Patient record created. Preparing folder...", "ok");
       showToast("Patient record created.", "success");
+      await loadPatientRecords({ preserveSelection: true });
+      const selectedPatient = patientRecordsCache.find((entry) => entry.id === savedPatientId) || createdPatient;
+      await ensurePatientDriveFolder(selectedPatient);
+      setStatus(appStatus, "Patient record created and folder prepared.", "ok");
+      showToast("Patient folder prepared.", "success");
     }
 
     selectedPatientRecordId = savedPatientId || null;
@@ -2640,6 +2881,7 @@ async function saveConsultationRecord(event) {
       throw new Error(error.message);
     }
     consultationForm?.reset();
+  setConsultationUploadState("", "");
     setStatus(appStatus, "Consultation saved.", "ok");
     showToast("Consultation saved.", "success");
     await selectPatientRecord(patientId);
@@ -2681,6 +2923,7 @@ async function deleteSelectedPatientRecord() {
     selectedPatientRecordId = null;
     patientForm?.reset();
     consultationForm?.reset();
+  setConsultationUploadState("", "");
     setStatus(appStatus, "Patient record deleted.", "ok");
     showToast("Patient record deleted.", "success");
     await loadPatientRecords({ preserveSelection: false });
@@ -2872,10 +3115,10 @@ async function loadTimeline() {
           item.className = `timeline-item ${applyStatusClass(appointment.status)}`;
           const title = document.createElement("div");
           title.className = "timeline-title";
-          title.textContent = `${appointment.patient_name} • ${appointment.service}`;
+          title.textContent = `${appointment.patient_name} | ${appointment.service}`;
           const sub = document.createElement("div");
           sub.className = "timeline-sub";
-          sub.textContent = `${appointment.patient_phone} • ${appointment.status}`;
+          sub.textContent = `${appointment.patient_phone} | ${appointment.status}`;
           item.append(title, sub);
 
           if (appointment.notes || appointment.status_note) {
@@ -3353,6 +3596,27 @@ async function init() {
     }
     openPatientDeleteModal(selectedPatient);
   });
+  patientDriveLink?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    const selectedPatient = patientRecordsCache.find((entry) => entry.id === String(patientFormId?.value || selectedPatientRecordId || "").trim());
+    if (!selectedPatient) {
+      showToast("Save or select a patient first.", "warn");
+      return;
+    }
+    if (selectedPatient.drive_folder_url) {
+      window.open(selectedPatient.drive_folder_url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    try {
+      setStatus(appStatus, "Preparing patient folder...", "ok");
+      const folderUrl = await ensurePatientDriveFolder(selectedPatient);
+      setStatus(appStatus, "Patient folder ready.", "ok");
+      window.open(folderUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      setStatus(appStatus, `Unable to access folder: ${error.message}`, "error");
+      showToast(`Unable to access folder: ${error.message}`, "error");
+    }
+  });
   importPatientsBtn?.addEventListener("click", async () => {
     try {
       await importPatientsFromAppointments();
@@ -3363,6 +3627,8 @@ async function init() {
   });
   patientForm?.addEventListener("submit", savePatientRecord);
   consultationForm?.addEventListener("submit", saveConsultationRecord);
+  uploadPrescriptionBtn?.addEventListener("click", () => consultationPrescriptionFileInput?.click());
+  consultationPrescriptionFileInput?.addEventListener("change", handlePrescriptionUpload);
   if (refreshDashboardBtn) {
     refreshDashboardBtn.addEventListener("click", async () => {
       setStatus(appStatus, "Refreshing data...", "ok");
